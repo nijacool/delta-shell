@@ -10,6 +10,7 @@ char *sudba_read_line(int file)
 {	
 	char buf[SUDBA_MAX_INPUT]; //Creates a static buffer called buf with size SUDBA_MAX_INPUT (defined in sudba.h) 
 	int count = read(file, buf, SUDBA_MAX_INPUT); //Reads and stores the number of characters in buf, up to SUDBA_MAX_INPUT
+	//strerror_r(file, buf, SUDBA_MAX_INPUT); //file might not be the correct argument !!
 	printf("Count: %d\n", count); // testing purposes
 	char *r = malloc(count + 1); //Allocates dynamic memory r with size of the input +1 for the NULL-terminated character
 	//strerror_r(file, buf, SUDBA_MAX_INPUT); //file might not be the correct argument !!
@@ -20,35 +21,17 @@ char *sudba_read_line(int file)
 	}
 	r[i] = 0; //RESOLVED! Ask Dmitry is index i+1 supposed to be there????????????????????????????????
 
-
-	/*int done = 0;
+	int done = 0;
 	while (done == 0) {
 		if (read(file, buf, SUDBA_MAX_INPUT) == 0) done = 1;
-	} */ 
-	//done = read(file, buf, SUDBA_MAX_INPUT);
-	//printf("new done = %d", done);
-	/*while (done != 0) {
-		if (read(file, buf, SUDBA_MAX_INPUT) == 0){
-			done = 0;	
-		}
-		printf("Read isn't 0");
-	}*/	
-
-
+	} 
 
 
 	//printf("Final int i is %d\n", i); //testing purposes
 	
-
-	//int len = strlen(r); //this is for testing purposes to print each index
-	
 	puts(r); //testing purposes
-	/*for (int c = 0; c <= len; c = c+1){ //this is for testing purposes to print each index
+	for (int c = 0; c < count; c = c+1){ //this is for testing purposes to print each index
 	printf("r[%d] : %c \n",c,r[c]); //this is for testing purposes to print each index
-	}*/
-
-
-	
-
-  return r; // Must be changed
+	}
+	return r; // Must be changed
 }
