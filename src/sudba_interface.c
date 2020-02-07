@@ -10,51 +10,41 @@
 
 char *sudba_read_line(int file)
 {	
-	char buf[SUDBA_MAX_INPUT]; //Creates a static buffer called buf with size SUDBA_MAX_INPUT (defined in sudba.h) 
-	int count = read(file, buf, SUDBA_MAX_INPUT); //Reads and stores the number of characters in buf, up to SUDBA_MAX_INPUT
+	char static_buffer[SUDBA_MAX_INPUT]; //Creates a static buffer called static_buffer with size SUDBA_MAX_INPUT (defined in sudba.h) 
+	int buffer_read_size = read(file, static_buffer, SUDBA_MAX_INPUT); //Reads and stores the number of characters in static_buffer, up to SUDBA_MAX_INPUT
 
-	if (count == -1) {
-		strerror_r(errno, buf, SUDBA_MAX_INPUT); //added by Cristian To check if read as an error
-		syslog(LOG_ERR,"%s", buf);
-		return NULL;
-		
-	}
-
-
-	//strerror_r(file, buf, SUDBA_MAX_INPUT); //file might not be the correct argument !!
-	printf("Count: %d\n", count); // testing purposes
-	char *r = malloc(count + 1); //Allocates dynamic memory r with size of the input +1 for the NULL-terminated character
-
-	if (r == NULL) {
-		strerror_r(errno, buf, SUDBA_MAX_INPUT); //added by Cristian To check if malloc as an error
-		syslog(LOG_ERR,"%s", buf);
+	if (buffer_read_size == -1) {
+		strerror_r(errno, static_buffer, SUDBA_MAX_INPUT); //Added by Cristian To check if read as an error
+		syslog(LOG_ERR,"%s", static_buffer);
 		return NULL;
 	}
-	
 
+	//printf("buffer_read_size: %d\n", buffer_read_size); //For testing purposes to print the number of characters read.
+	char *string_pointer = malloc(buffer_read_size + 1); //Allocates dynamic memory string_pointer with size of the input. An additional character added (buffer_read_size+1) for null character 0
 
-	//strerror_r(file, buf, SUDBA_MAX_INPUT); //file might not be the correct argument !!
- 	int i = 0;
-	//We need a for loop because we know the number of iterations, while loop is only use if we do not know the number of iterations;
-
-	for(i = 0; i < count; i++){
-		r[i] = buf[i];
+	if (string_pointer == NULL) {
+		strerror_r(errno, static_buffer, SUDBA_MAX_INPUT); //added by Cristian To check if malloc as an error
+		syslog(LOG_ERR,"%s", static_buffer);
+		return NULL;
 	}
 
-	r[i] = 0; //RESOLVED! Ask Dmitry is index i+1 supposed to be there????????????????????????????????
+ 	int i = 0; //We need a for loop because we know the number of iterations, while loop is only use if we do not know the number of iterations;
 
-	int done = 0;
-	
-	while (read(file, buf, SUDBA_MAX_INPUT) > 0) {  //while you read at least one character, it will keep reading in an iteration, to discard any exceesive input.
+	for(i = 0; i < buffer_read_size; i++){
+		string_pointer[i] = static_buffer[i];
+	}
+
+	string_pointer[i] = 0; //RESOLVED! Ask DZ is index i+1 supposed to be there?
+
+	while (read(file, static_buffer, SUDBA_MAX_INPUT) > 0) {  //While you read at least one character, it will keep reading in an iteration, to discard any exceesive input.
 	} 
 
+	//puts(string_pointer); //For testing purposes
 
-	//printf("Final int i is %d\n", i); //testing purposes
-	
-	puts(r); //testing purposes
-	for (int c = 0; c < count; c = c+1){ //this is for testing purposes to print each index
-	printf("r[%d] : %c \n",c,r[c]); //this is for testing purposes to print each index
-	}
-	syslog(LOG_INFO, "%s", r); // The function shall log the obtained string to the previously openend system log file at priority LOG_INFO before returning it. use the command tail /var/log/syslog in the terminal to read the log that are save in the log file
-	return r; // Must be changed
+	/*for (int c = 0; c < buffer_read_size; c = c+1) { //this is for testing purposes to print each index
+	printf("string_pointer[%d] : %c \n", c, string_pointer[c]); // For testing purposes to print each index char[i]
+	}*/
+
+	syslog(LOG_INFO, "%s", string_pointer); // The function shall log the obtained string to the previously openend system log file at priority LOG_INFO before returning it. use the command tail /var/log/syslog in the terminal to read the log that are save in the log file
+	return string_pointer; 
 }
