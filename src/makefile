@@ -1,6 +1,8 @@
 TARGET = sudba
 INCLUDE = include/
-OBJS = sudba.o sudba_interface.o
+YACC = bison
+LEX = flex
+OBJS = susql-scanner.o susql-parser.o sudba-main.o
 
 CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
@@ -10,18 +12,31 @@ CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 
 all: $(TARGET)
 
-sudba: $(OBJS) # Uncomment the end of the next line for memory debugging
+# Uncomment the end of the rule for memory debugging
+sudba: $(OBJS) 
 	$(CC) $(OBJS) -o $(TARGET) #-lefence 
 
-sudba.o: sudba.c $(INCLUDE)/sudba.h
+susql-scanner.c: susql.l susql-parser.h
+	$(LEX) -o susql-scanner.c susql.l
 
-sudba_interface.o: sudba_interface.c $(INCLUDE)/sudba.h
+susql-parser.c susql-parser.h: susql.y
+	$(YACC) -Wempty-rule -d -o susql-parser.c susql.y
+
+sudba-main.o: sudba-main.c susql-parser.h
+
+susql-scanner.o: susql-scanner.c susql-parser.h
 
 # Remove everything that can be rebuilt
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) susql-scanner.c susql-parser.h susql-parser.c
 
-test: $(TARGET)
-	@echo "CREATE TABLE FOO;" | ./$(TARGET)
-	@echo "This is a long test command" | ./$(TARGET) 
-	@echo "Check the system log file!"
+test: $(TARGET) test.sql
+	@echo "The program must fail the next three tests. If it does not, it is incorrect"
+	@echo "Test 1 (must quit):"
+	./$(TARGET) 1 2 3
+	@echo "Test 2 (must quit):"
+	./$(TARGET) -95
+	@echo "Test 3 (must quit):"
+	./$(TARGET) "hello, world"
+	@echo "The program must pass the next test:"
+	@cat test.sql | ./$(TARGET) 8888
