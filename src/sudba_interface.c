@@ -7,7 +7,7 @@
 #include <syslog.h> //included by Cristian
 
 // Client-side SUDBa interface
-
+// DZ: please remove commented code before submission.
 char *sudba_read_line(int file)
 {	
 	char static_buffer[SUDBA_MAX_INPUT]; //Creates a static buffer called static_buffer with size SUDBA_MAX_INPUT (defined in sudba.h) 
