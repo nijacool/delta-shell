@@ -43,7 +43,7 @@ string        \"([^\n\\\"]|\\.)*\"
 [()*,.;<>=] { return yytext[0]; }
 
 {intnum}    { int i; return YY_INTNUM; }
-{floatnum}  { int f; return YY_FLOATNUM; }
+{floatnum}  { float f; return YY_FLOATNUM; }
 {id}        { return YY_ID; }
 {string}    { return YY_STRING; }
 
