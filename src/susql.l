@@ -11,7 +11,7 @@
 /* Useful macros; do you still remember regular expressions? */
 intnum        [-+]?[[:digit:]]+
 floatnum      [-+]?([[:digit:]]+\.[[:digit:]]*)|(\.[[:digit:]]+)
-id            
+id            [A-Z]+  
 string        \"([^\n\\\"]|\\.)*\"
 
 /* Rules for recognizing tokens; (?i:...) allows case-insensitive
