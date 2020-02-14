@@ -53,10 +53,10 @@ query:
   %empty /* empty query is ok! */
 | create-query { fputs("200 created\n", stderr); }
 | drop-query { fputs("200 dropped\n", stderr); }
-| insert-query
-| select-query
-| update-query
-| delete-query
+| insert-query { fputs("200 inserted\n", stderr); }
+| select-query { fputs("200 selected\n", stderr); }
+| update-query { fputs("200 updated\n", stderr); }
+| delete-query { fputs("200 deleted\n", stderr); }
 ;
 
 create-query:

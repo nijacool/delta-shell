@@ -11,7 +11,7 @@
 /* Useful macros; do you still remember regular expressions? */
 intnum        [-+]?[[:digit:]]+
 floatnum      [-+]?([[:digit:]]+\.[[:digit:]]*)|(\.[[:digit:]]+)
-id            _
+id            
 string        \"([^\n\\\"]|\\.)*\"
 
 /* Rules for recognizing tokens; (?i:...) allows case-insensitive
@@ -23,17 +23,17 @@ string        \"([^\n\\\"]|\\.)*\"
 "#".*
 (?i:char)   { return YY_CHR; }
 (?i:create) { return YY_CREATE; }
-(?i:delete) { return YY_DELETE; }
+(?i:delete) { return YY_DELETE; } 
 (?i:drop)   { return YY_DROP; }
 (?i:from)   { return YY_FROM; }
-(?i:insert) { return YY_INSERT; }
+(?i:insert) { return YY_INSERT; }  
 (?i:int)    { return YY_INT; }
 (?i:into)   { return YY_INTO; }
 (?i:float)  { return YY_FLOAT; }
-(?i:select) { return YY_SELECT; }
+(?i:select) { return YY_SELECT; } 
 (?i:set)    { return YY_SET; }
 (?i:table)  { return YY_TABLE; }
-(?i:update) { return YY_UPDATE; }
+(?i:update) { return YY_UPDATE; } 
 (?i:values) { return YY_VALUES; }
 (?i:where)  { return YY_WHERE; }
 
@@ -42,8 +42,8 @@ string        \"([^\n\\\"]|\\.)*\"
 ">="        { return YY_GE; }
 [()*,.;<>=] { return yytext[0]; }
 
-{intnum}    { int i; return YY_INTNUM; }
-{floatnum}  { float f; return YY_FLOATNUM; }
+{intnum}    { int i; i = atoi(yytext); return YY_INTNUM; }
+{floatnum}  { float f; f = atof(yytext); return YY_FLOATNUM; }
 {id}        { return YY_ID; }
 {string}    { return YY_STRING; }
 
