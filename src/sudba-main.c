@@ -12,16 +12,17 @@ static int PORT = 8000;
 int sudba_initialize(int argn, char *argv[])
 {
   if(argn > 2){
-	fprintf(stderr, "Argument is greater than 2");
+	fprintf(stderr, "Error: argn is greater than 2");
 	return 1; 
 	}
-	int i = atoi(argv[1]);
+
+  int i = atoi(argv[1]);
   if (i > 0) {
-	printf("Success");
+	printf("Success!\n");
 	PORT = i;
 	}
   else {
-	fprintf(stderr, "argv[1] is not a positive integer number.");
+	fprintf(stderr, "Error: argv[1] is not a positive integer number.");
 	return 1; 
 	}
 	
@@ -31,10 +32,10 @@ int sudba_initialize(int argn, char *argv[])
 
 
   /* 3 */
-  	int g = getpid();
+  	int ipid = getpid();
 	FILE *fptr = fopen("sudba.pid", "w");
-	if (fptr == NULL) { perror("Error, fptr is null"); return 1; }
-	if ((fprintf(fptr, "%d\n", g)) < 0) { perror("Error writing fptr"); return 1;} //wrote the wrong thing
+	if (fptr == NULL) { perror("Error: fptr is null"); return 1; }
+	if ((fprintf(fptr, "%d\n", ipid)) < 0) { perror("Error writing to fptr"); return 1;} //wrote the wrong thing
 	fclose(fptr);
 	
   /* 4 */
