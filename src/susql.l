@@ -8,10 +8,10 @@
 %option reentrant bison-bridge bison-locations                                  
 %option extra-type="int"
 
-/* Useful macros; do you still remember regular expressions? */
+/* Useful macros; do you still remember regular expressions? */ //add ranges, & include underscore, not a part of range of letters -> must a
 intnum        [-+]?[[:digit:]]+
 floatnum      [-+]?([[:digit:]]+\.[[:digit:]]*)|(\.[[:digit:]]+)
-id            (?:\w+\s+)([a-zA-Z_][a-zA-Z0-9_]*)
+id            [a-zA-Z_][a-zA-Z0-9_] 
 string        \"([^\n\\\"]|\\.)*\"
 
 /* Rules for recognizing tokens; (?i:...) allows case-insensitive
