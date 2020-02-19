@@ -11,13 +11,14 @@
 /* Useful macros; do you still remember regular expressions? */ //add ranges, & include underscore, not a part of range of letters -> must a
 intnum        [-+]?[[:digit:]]+
 floatnum      [-+]?([[:digit:]]+\.[[:digit:]]*)|(\.[[:digit:]]+)
-id            [a-zA-Z_][a-zA-Z0-9_] 
+id	      (?:\w+\s+)[:alpha:][:alnum:][[:space:]]+ 
 string        \"([^\n\\\"]|\\.)*\"
 
 /* Rules for recognizing tokens; (?i:...) allows case-insensitive
  * matching. Extract comments, keywords, operators, literals. We
  * ignore spaces. Everything else is reported to the parser, let it
  * handle junk */ 
+//Update: the new ID translated to regex does the same thing as (?:\w+\s+)([a-zA-Z_][a-zA-Z0-9_]*), but now it ignores the spaces
 %%
 "-- ".*
 "#".*
