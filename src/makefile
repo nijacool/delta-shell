@@ -38,5 +38,5 @@ test: $(TARGET) test.sql
 	./$(TARGET) -95 || true
 	@echo "Test 3 (must not \"hang up\"):"
 	./$(TARGET) "hello, world" || true
-	@echo "The program must pass the next test:"
+	@echo "The program must pass the next test and show seven 200 statuses and one 400 status:"
 	@cat test.sql | ./$(TARGET) 8888
