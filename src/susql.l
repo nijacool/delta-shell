@@ -42,7 +42,6 @@ string        \"([^\n\\\"]|\\.)*\"
 "<="        { return YY_LE; }
 ">="        { return YY_GE; }
 [()*,.;<>=] { return yytext[0]; }
-
 {intnum}    { int i; i = atoi(yytext); return YY_INTNUM; }
 {floatnum}  { float f; f = atof(yytext); return YY_FLOATNUM; }
 {id}        { return YY_ID; }
