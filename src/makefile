@@ -8,7 +8,7 @@ CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
 	-Wmissing-include-dirs -Wredundant-decls -Wshadow \
 	-Wstrict-overflow=5 -Wundef -Werror -Wno-unused \
-	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-error=sign-compare
+	-g -Wno-unused-result -O3 -Wno-strict-overflow
 
 all: $(TARGET)
 
@@ -32,11 +32,11 @@ clean:
 
 test: $(TARGET) test.sql
 	@echo "The program must fail the next three tests. If it does not, it is incorrect"
-	@echo "Test 1 (must quit):"
-	./$(TARGET) 1 2 3
-	@echo "Test 2 (must quit):"
-	./$(TARGET) -95
-	@echo "Test 3 (must quit):"
-	./$(TARGET) "hello, world"
-	@echo "The program must pass the next test:"
+	@echo "Test 1 (must not \"hang up\"):"
+	./$(TARGET) 1 2 3 || true
+	@echo "Test 2 (must not \"hang up\"):"
+	./$(TARGET) -95 || true
+	@echo "Test 3 (must not \"hang up\"):"
+	./$(TARGET) "hello, world" || true
+	@echo "The program must pass the next test and show seven 200 statuses and one 400 status:"
 	@cat test.sql | ./$(TARGET) 8888
