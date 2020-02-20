@@ -12,37 +12,34 @@ static int PORT = 8000;
 int sudba_initialize(int argn, char *argv[])
 {
   if(argn > 2){
-	fprintf(stderr, "Error: argn is greater than 2");
+	fprintf(stderr, "Error: argn is greater than 2.\n");
 	return 1; 
 	}
 
   int i = atoi(argv[1]);
   if (i > 0) {
-	printf("Success!\n");
+	printf("Success PORT = argv[1]: PORT = %i\n", i);
 	PORT = i;
 	}
   else {
-	fprintf(stderr, "Error: argv[1] is not a positive integer number.");
+	fprintf(stderr, "Error: argv[1] is not a positive integer number.\n");
 	return 1; 
 	}
-	
   /* 2 */
-	if (chdir(SUDBA_WD) == -1) { perror("Error when changing directory"); return 1;}
-	printf(SUDBA_WD); //Ask DZ about this
-
-
+	int j = chdir(SUDBA_WD);
+	if (j != 0) { perror("Error when changing directory"); return 1; }
+	if (j == 0) { printf("Success changing working directory: %s \n", SUDBA_WD);}
   /* 3 */
   	int ipid = getpid();
 	FILE *fptr = fopen("sudba.pid", "w");
 	if (fptr == NULL) { perror("Error: fptr is null"); return 1; }
-	if ((fprintf(fptr, "%d\n", ipid)) < 0) { perror("Error writing to fptr"); return 1;} //wrote the wrong thing
+	if ((fprintf(fptr, "%d\n", ipid)) < 0) { perror("Error writing to fptr"); return 1;}
 	fclose(fptr);
-	
   /* 4 */
   openlog("sudba", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
   syslog(LOG_INFO, "Started");
   closelog();
-  
+
   return 0;
 }
 
