@@ -8,20 +8,19 @@
 %option reentrant bison-bridge bison-locations                                  
 %option extra-type="int"
 
-/* Useful macros; do you still remember regular expressions? */ 
+/* Useful macros; do you still remember regular expressions? */  
 intnum        [-+]?[[:digit:]]+
 floatnum      [-+]?([[:digit:]]+\.[[:digit:]]*)|(\.[[:digit:]]+)
-id	      (?:\w+\s+)[:alpha:][:alnum:][[:space:]]+ 
+id	      [[:alpha:]_][[:alnum:]_]*
 string        \"([^\n\\\"]|\\.)*\"
 
 /* Rules for recognizing tokens; (?i:...) allows case-insensitive
  * matching. Extract comments, keywords, operators, literals. We
  * ignore spaces. Everything else is reported to the parser, let it
  * handle junk */ 
-//Update: the new ID translated to regex does the same thing as (?:\w+\s+)([a-zA-Z_][a-zA-Z0-9_]*), but now it ignores the spaces
 %%
 "-- ".*
-"#".*
+"#"m.*
 (?i:char)   { return YY_CHR; }
 (?i:create) { return YY_CREATE; }
 (?i:delete) { return YY_DELETE; } 
@@ -42,10 +41,10 @@ string        \"([^\n\\\"]|\\.)*\"
 "<="        { return YY_LE; }
 ">="        { return YY_GE; }
 [()*,.;<>=] { return yytext[0]; }
-{intnum}    { int i; i = atoi(yytext); return YY_INTNUM; }
-{floatnum}  { float f; f = atof(yytext); return YY_FLOATNUM; }
-{id}        { return YY_ID; }
-{string}    { return YY_STRING; }
+{intnum}    { /*printf("Flex intnum: %s\n", yytext);*/ int i; i = atoi(yytext); return YY_INTNUM; }
+{floatnum}  { /*printf("Flex floatnum: %s\n", yytext);*/ float f; f = atof(yytext); return YY_FLOATNUM; }
+{id}        { /*printf("Flex id: %s\n", yytext);*/ return YY_ID; }
+{string}    { /*printf("Flex string: %s\n", yytext);*/ return YY_STRING; }
 
 [[:space:]]+
 
@@ -57,7 +56,6 @@ string        \"([^\n\\\"]|\\.)*\"
 int sudba_parse(int socket /* unused */)
 {
   socket = 0; // Keep the compiler happy; will fix later
-  
   yyscan_t scanner;  
   yylex_init(&scanner);
   int status = yyparse(scanner);
