@@ -20,7 +20,7 @@ string        \"([^\n\\\"]|\\.)*\"
  * handle junk */ 
 %%
 "-- ".*
-"#"m.*
+"#"m.* { /* DZ: This "m" does not belong here */}
 (?i:char)   { return YY_CHR; }
 (?i:create) { return YY_CREATE; }
 (?i:delete) { return YY_DELETE; } 
