@@ -2,13 +2,13 @@ TARGET = sudba
 INCLUDE = include/
 YACC = bison
 LEX = flex
-OBJS = susql-scanner.o susql-parser.o sudba-main.o
+OBJS = susql-scanner.o susql-parser.o sudba-main.o sudba-utils.o
 
 CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
 	-Wmissing-include-dirs -Wredundant-decls -Wshadow \
 	-Wstrict-overflow=5 -Wundef -Werror -Wno-unused \
-	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-error=sign-compare
+	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-sign-compare
 
 all: $(TARGET)
 
@@ -22,9 +22,11 @@ susql-scanner.c: susql.l susql-parser.h
 susql-parser.c susql-parser.h: susql.y
 	$(YACC) -Wempty-rule -d -o susql-parser.c susql.y
 
-sudba-main.o: sudba-main.c susql-parser.h
+sudba-main.o: sudba-main.c susql-parser.h $(INCLUDE)sudba.h
 
-susql-scanner.o: susql-scanner.c susql-parser.h
+sudba-utils.o: sudba-utils.c $(INCLUDE)sudba.h
+
+susql-scanner.o: susql-scanner.c susql-parser.h $(INCLUDE)sudba.h
 
 # Remove everything that can be rebuilt
 clean:

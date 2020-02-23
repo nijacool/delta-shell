@@ -15,11 +15,17 @@
   void yyerror(YYLTYPE* yyllocp, yyscan_t unused, const char* msg);
  }
 
+%union{
+  int i;
+  float f;
+  char *s;
+  }
+
 /* Data types */
-%token YY_FLOATNUM
-%token YY_ID
-%token YY_INTNUM
-%token YY_STRING
+%token<f> YY_FLOATNUM
+%token<s> YY_ID
+%token<i> YY_INTNUM
+%token<s> YY_STRING
 
  /* Keywords */
 %token YY_CHR
@@ -52,7 +58,7 @@ script:
 query:
   %empty /* empty query is ok! */
 | create-query { fputs("200 created\n", stderr); }
-| drop-query { fputs("200 dropped\n", stderr); }
+| drop-query   { fputs("200 dropped\n", stderr); }
 | insert-query { fputs("200 inserted\n", stderr); }
 | select-query { fputs("200 selected\n", stderr); }
 | update-query { fputs("200 updated\n", stderr); }
@@ -71,9 +77,9 @@ spec:
   YY_ID type ;
 
 type:
-  YY_INT
+YY_INT
 | YY_FLOAT
-| YY_CHR '(' YY_INTNUM ')'
+  | YY_CHR '(' YY_INTNUM ')'
 ;
 
 drop-query:
@@ -92,7 +98,8 @@ valist:
 value:
   YY_INTNUM
 | YY_FLOATNUM
-| YY_STRING ;
+| YY_STRING
+;
 
 select-query:
   YY_SELECT columns YY_FROM tables where-clause
