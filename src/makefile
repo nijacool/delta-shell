@@ -1,8 +1,9 @@
 TARGET = sudba
-INCLUDE = include/
+WD = /tmp/$(TARGET)
+INCLUDE = include
 YACC = bison
 LEX = flex
-OBJS = susql-scanner.o susql-parser.o sudba-main.o sudba-utils.o
+OBJS = susql-scanner.o susql-parser.o sudba-main.o sudba-utils.o sudba-db.o
 
 CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
@@ -22,23 +23,20 @@ susql-scanner.c: susql.l susql-parser.h
 susql-parser.c susql-parser.h: susql.y
 	$(YACC) -Wempty-rule -d -o susql-parser.c susql.y
 
-sudba-main.o: sudba-main.c susql-parser.h $(INCLUDE)sudba.h
+sudba-main.o: sudba-main.c susql-parser.h $(INCLUDE)/sudba.h
 
-sudba-utils.o: sudba-utils.c $(INCLUDE)sudba.h
+sudba-utils.o: sudba-utils.c $(INCLUDE)/sudba.h
 
-susql-scanner.o: susql-scanner.c susql-parser.h $(INCLUDE)sudba.h
+sudba-db.o: sudba-db.c $(INCLUDE)/sudba.h
+
+susql-scanner.o: susql-scanner.c susql-parser.h $(INCLUDE)/sudba.h
 
 # Remove everything that can be rebuilt
 clean:
 	rm -f $(OBJS) $(TARGET) susql-scanner.c susql-parser.h susql-parser.c
 
 test: $(TARGET) test.sql
-	@echo "The program must fail the next three tests. If it does not, it is incorrect"
-	@echo "Test 1 (must not \"hang up\"):"
-	./$(TARGET) 1 2 3 || true
-	@echo "Test 2 (must not \"hang up\"):"
-	./$(TARGET) -95 || true
-	@echo "Test 3 (must not \"hang up\"):"
-	./$(TARGET) "hello, world" || true
-	@echo "The program must pass the next test and show seven 200 statuses and one 400 status:"
+	@mkdir $(WD) || echo "But it's ok!"
+	@touch $(WD)/my_data.frm
+	@touch $(WD)/my_data.MYD
 	@cat test.sql | ./$(TARGET) 8888

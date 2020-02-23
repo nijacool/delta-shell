@@ -4,6 +4,8 @@
 
 %code top {
 #include <stdio.h>
+#include <stdlib.h>
+#include "sudba.h"
  }
 %code requires {
   int sudba_parse(int socket /* unused */);
@@ -46,7 +48,6 @@
 %token YY_UPDATE
 %token YY_VALUES
 %token YY_WHERE
-
 %start script
 
 %%
@@ -56,9 +57,8 @@ script:
 | script query ';'
 
 query:
-  %empty /* empty query is ok! */
-| create-query { fputs("200 created\n", stderr); }
-| drop-query   { fputs("200 dropped\n", stderr); }
+  create-query { fputs("200 created\n", stderr); }
+| drop-query   
 | insert-query { fputs("200 inserted\n", stderr); }
 | select-query { fputs("200 selected\n", stderr); }
 | update-query { fputs("200 updated\n", stderr); }
@@ -77,13 +77,13 @@ spec:
   YY_ID type ;
 
 type:
-YY_INT
+  YY_INT
 | YY_FLOAT
-  | YY_CHR '(' YY_INTNUM ')'
+| YY_CHR '(' YY_INTNUM ')'
 ;
 
 drop-query:
-  YY_DROP YY_TABLE YY_ID
+  YY_DROP YY_TABLE YY_ID { sudba_drop_database($3); }
 ;
 
 insert-query:

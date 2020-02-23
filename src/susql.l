@@ -46,7 +46,7 @@ string        \"([^\n\\\"]|\\.)*\"
 {intnum}    { yylval->i = atoi(yytext); return YY_INTNUM; }
 {floatnum}  { yylval->f = atof(yytext); return YY_FLOATNUM; }
 {id}        { yylval->s = strdup(yytext); return YY_ID; }
-{string}    { yylval->s = makeString(yytext); return YY_STRING; }
+{string}    { yylval->s = sudba_make_string(yytext); return YY_STRING; }
 
 [[:space:]]+
 
