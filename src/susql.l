@@ -58,7 +58,6 @@ string        \"([^\n\\\"]|\\.)*\"
 int sudba_parse(int socket /* unused */)
 {
   socket = 0; // Keep the compiler happy; will fix later
-  
   yyscan_t scanner;  
   yylex_init(&scanner);
   int status = yyparse(scanner);
