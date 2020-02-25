@@ -29,8 +29,6 @@ char *sudba_make_string(char *text)
 				temp[temp_counter] = '\\';
 		} //remaining backslash??
 			//text_length--; //for realloc
-			temp_counter++;
-			i++;
 		}
 		else {
 			temp[temp_counter] = text[i];
@@ -38,8 +36,8 @@ char *sudba_make_string(char *text)
 		}
 		printf("text[%i] = %c\n", i,text[i]);
 	}
-	temp[text_length] = '\0';
-	//temp = realloc(temp,text_length);
+	temp[temp_counter] = '\0';
+	temp = realloc(temp,temp_counter);
 	puts(temp);
 	//for (int j = 0; j < text_length; j++){
 	//	printf("temp[%i] = %c\n", j,temp[j]);
@@ -48,7 +46,22 @@ char *sudba_make_string(char *text)
 }
 
 bool sudba_exists(char *table) {
-  /* 1 */
+  printf("Table name:");
+  puts(table);
+	FILE *fptr;
+	char frm[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
+	strcpy(frm,DB_WD);
+	strcat(frm,table);
+	strcat(frm,".frm");
+	char MYD[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
+	strcpy(MYD,DB_WD);
+	strcat(MYD,table);
+	strcat(MYD,".MYD");
+	printf("%s",MYD); //FOR DEBUGGING
+	if (((fptr = fopen(frm,"a+")) == NULL) || ((fptr = fopen(MYD,"a+")) == NULL)) { //I THINK THIS WORKS. JUST NEED TO FIND OUT HOW TO DEBUG //Also, ask DZ if it is okay to use just 1 fptr, since we are just checking, i don't think its a problem, but worth asking. & do we need to close fptr?
+		return false;
+	}
+
   /* 2 */
   // Your code goes here
   return true;
