@@ -8,7 +8,7 @@
 
 char *sudba_make_string(char *text)
 {	
-	int text_length = strlen(text); // Do i need to catch this?
+	int text_length = strlen(text); // Do i need to catch this? no
   	char *temp = malloc(text_length+1);
 	int temp_counter = 0;
 	for (int i = 1; i < text_length-1; i++) {
@@ -56,16 +56,18 @@ char *sudba_make_string(char *text)
 }
 
 bool sudba_exists(char *table) {
-  printf("Table name:");
+  printf("Table name:"); //need to delete
   puts(table);
 	FILE *fptr;
 	char frm[strlen(DB_WD)+strlen(table)+strlen(".frm")];
-	strcpy(frm,DB_WD); strcat(frm,table); strcat(frm,".frm");
+	strcpy(frm,DB_WD); strcat(frm,table); strcat(frm,".frm"); //change this like in sudba-db.c
 	printf("FRM directory name: %s\n",frm); //FOR DEBUGGING
 	char MYD[strlen(DB_WD)+strlen(table)+strlen(".MYD")];
 	strcpy(MYD,DB_WD); strcat(MYD,table); strcat(MYD,".MYD");
 	printf("MYD directory name: %s\n",MYD); //FOR DEBUGGING
 	if (((fptr = fopen(frm,"a+")) == NULL) || ((fptr = fopen(MYD,"a+")) == NULL)) { //I THINK THIS WORKS. JUST NEED TO FIND OUT HOW TO DEBUG //Also, ask DZ if it is okay to use just 1 fptr, since we are just checking, i don't think its a problem, but worth asking. & do we need to close fptr?
+//need to check for reading first, then appending //4 opens= 4 closes
+
 		return false;
 	}
 
