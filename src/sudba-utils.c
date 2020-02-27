@@ -13,6 +13,23 @@ char *sudba_make_string(char *text)
 	int temp_counter = 0;
 	for (int i = 1; i < text_length-1; i++) {
 		if (text[i] == '\\') {
+//New Changes made from this point
+			switch(text[i+1]){
+				case '"': temp[temp_counter] = text[i+1];
+					   continue;
+				case 't': temp[temp_counter] = '\t';
+					   continue;
+				case 'r': temp[temp_counter] = '\r';
+					   continue;
+				case '\\':temp[temp_counter] = '\\';
+					   continue;
+			}
+		}else{temp[temp_counter] = text[i];temp_counter++;}
+
+//Code Taken Care as a switch statement, but kept the if statement version until clean up stage of the homework, to compare and check for errors
+
+/*		
+		
 			if(text[i+1] == '"') {
 				temp[temp_counter] = text[i+1];
 		}
@@ -34,8 +51,10 @@ char *sudba_make_string(char *text)
 			temp[temp_counter] = text[i];
 			temp_counter++;
 		}
+*/
 		printf("text[%i] = %c\n", i,text[i]);
 	}
+
 	temp[temp_counter] = '\0';
 	temp = realloc(temp,temp_counter);
 	puts(temp);
