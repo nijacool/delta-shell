@@ -36,13 +36,11 @@ char *sudba_make_string(char *text)
 		}
 		printf("text[%i] = %c\n", i,text[i]); //for debugging. will delete.
 	}
-	temp[text_length] = '\0';
-	//temp = realloc(temp,text_length);
-	puts(temp);
-	//for (int j = 0; j < text_length; j++){
-	//	printf("temp[%i] = %c\n", j,temp[j]);
-	//}
-  return text; //was originally text
+	temp[temp_counter+1] = '\0';
+	printf("temp counter: %i\n",temp_counter);
+	temp = realloc(temp,temp_counter+1); //this code is buggy
+	printf("text to return: %s\n",temp);
+  return temp; //was originally text
 }
 
 bool sudba_exists(char *table) {
