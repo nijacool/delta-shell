@@ -59,21 +59,21 @@ bool sudba_exists(char *table) {
 	printf("FRM: %s\n",frm);
 	printf("MYD: %s\n",MYD);//will delete
 	if ((fptr = fopen(frm,"r")) == NULL) {
-		fclose(fptr);
 		return false;
 	}
+		fclose(fptr);
 	if ((fptr = fopen(MYD,"r")) == NULL) {
-		fclose(fptr);
 		return false;
 	}
-	if ((fptr == fopen(frm,"a")) == NULL) {
 		fclose(fptr);
+	if ((fptr = fopen(frm,"a")) == NULL) {
 		return false;
 	}
+		fclose(fptr);
 	if ((fptr = fopen(MYD,"a")) == NULL) {
-		fclose(fptr);
 		return false;
 	}
+		fclose(fptr);
 	
 
   /* 2 */
