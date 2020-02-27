@@ -6,16 +6,11 @@
 
 bool sudba_drop_database(char *table) {
   sudba_lock(table);
-	printf("Table name in the function sudba_drop_database:");
 
-	char frm[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
-	strcpy(frm,DB_WD);
-	strcat(frm,table);
-	strcat(frm,".frm");
-	char MYD[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
-	strcpy(MYD,DB_WD);
-	strcat(MYD,table);
-	strcat(MYD,".MYD");
+	char frm[strlen(DB_WD)+strlen(table)+strlen(".frm")];
+	strcpy(frm,DB_WD); strcat(frm,table); strcat(frm,".frm");
+	char MYD[strlen(DB_WD)+strlen(table)+strlen(".MYD")];
+	strcpy(MYD,DB_WD); strcat(MYD,table); strcat(MYD,".MYD");
 	int status_frm; 
 	int status_MYD;
   bool status = true;

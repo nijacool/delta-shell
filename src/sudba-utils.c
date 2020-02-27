@@ -16,14 +16,15 @@ char *sudba_make_string(char *text)
 //New Changes made from this point
 			switch(text[i+1]){
 				case '"': temp[temp_counter] = text[i+1];
-					   continue;
+					   break;
 				case 't': temp[temp_counter] = '\t';
-					   continue;
+					   break;
 				case 'r': temp[temp_counter] = '\r';
-					   continue;
+					   break;
 				case '\\':temp[temp_counter] = '\\';
-					   continue;
+					   break;
 			}
+		
 		}else{temp[temp_counter] = text[i];temp_counter++;}
 
 //Code Taken Care as a switch statement, but kept the if statement version until clean up stage of the homework, to compare and check for errors
@@ -58,15 +59,12 @@ bool sudba_exists(char *table) {
   printf("Table name:");
   puts(table);
 	FILE *fptr;
-	char frm[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
-	strcpy(frm,DB_WD);
-	strcat(frm,table);
-	strcat(frm,".frm");
-	char MYD[50]; //WE WILL NEED TO CHANGE THIS & figure out how to create a directory faster.
-	strcpy(MYD,DB_WD);
-	strcat(MYD,table);
-	strcat(MYD,".MYD");
-	printf("%s",MYD); //FOR DEBUGGING
+	char frm[strlen(DB_WD)+strlen(table)+strlen(".frm")];
+	strcpy(frm,DB_WD); strcat(frm,table); strcat(frm,".frm");
+	printf("FRM directory name: %s\n",frm); //FOR DEBUGGING
+	char MYD[strlen(DB_WD)+strlen(table)+strlen(".MYD")];
+	strcpy(MYD,DB_WD); strcat(MYD,table); strcat(MYD,".MYD");
+	printf("MYD directory name: %s\n",MYD); //FOR DEBUGGING
 	if (((fptr = fopen(frm,"a+")) == NULL) || ((fptr = fopen(MYD,"a+")) == NULL)) { //I THINK THIS WORKS. JUST NEED TO FIND OUT HOW TO DEBUG //Also, ask DZ if it is okay to use just 1 fptr, since we are just checking, i don't think its a problem, but worth asking. & do we need to close fptr?
 		return false;
 	}
