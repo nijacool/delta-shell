@@ -8,12 +8,10 @@
 
 char *sudba_make_string(char *text)
 {	
-<<<<<<< HEAD
-	int text_length = strlen(text); // Do i need to catch this? no
-=======
+//<<<<<<< HEAD
 	
 	int text_length = strlen(text); // Do i need to catch this?
->>>>>>> b0b401328062147eca95a5ad816a687b19727711
+//????>>>>>>> b0b401328062147eca95a5ad816a687b19727711
   	char *temp = malloc(text_length+1);
 	int temp_counter = 0;
 	for (int i = 1; i < text_length-1; i++) {
@@ -54,17 +52,29 @@ bool sudba_exists(char *table) {
   printf("Table name:"); //need to delete
   puts(table);
 	FILE *fptr;
-	char frm[strlen(DB_WD)+strlen(table)+strlen(".frm")];
-	strcpy(frm,DB_WD); strcat(frm,table); strcat(frm,".frm"); //change this like in sudba-db.c
-	printf("FRM directory name: %s\n",frm); //FOR DEBUGGING
-	char MYD[strlen(DB_WD)+strlen(table)+strlen(".MYD")];
-	strcpy(MYD,DB_WD); strcat(MYD,table); strcat(MYD,".MYD");
-	printf("MYD directory name: %s\n",MYD); //FOR DEBUGGING
-	if (((fptr = fopen(frm,"a+")) == NULL) || ((fptr = fopen(MYD,"a+")) == NULL)) { //I THINK THIS WORKS. JUST NEED TO FIND OUT HOW TO DEBUG //Also, ask DZ if it is okay to use just 1 fptr, since we are just checking, i don't think its a problem, but worth asking. & do we need to close fptr?
-//need to check for reading first, then appending //4 opens= 4 closes
-
+	char frm[strlen(table)+strlen(DB_SCHEMA_EXT)+1];
+	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT); 
+	char MYD[strlen(DB_WD)+strlen(table)+strlen(DB_DATA_EXT)+1];
+	strcpy(MYD,table); strcat(MYD,DB_DATA_EXT);
+	printf("FRM: %s\n",frm);
+	printf("MYD: %s\n",MYD);//will delete
+	if ((fptr = fopen(frm,"r")) == NULL) {
+		fclose(fptr);
 		return false;
 	}
+	if ((fptr = fopen(MYD,"r")) == NULL) {
+		fclose(fptr);
+		return false;
+	}
+	if ((fptr == fopen(frm,"a")) == NULL) {
+		fclose(fptr);
+		return false;
+	}
+	if ((fptr = fopen(MYD,"a")) == NULL) {
+		fclose(fptr);
+		return false;
+	}
+	
 
   /* 2 */
   // Your code goes here
