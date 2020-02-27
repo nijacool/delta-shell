@@ -29,29 +29,19 @@ char *sudba_make_string(char *text)
 //Code Taken Care as a switch statement, but kept the if statement version until clean up stage of the homework, to compare and check for errors
 
 /*		
-		
-			if(text[i+1] == '"') {
-				temp[temp_counter] = text[i+1];
+			if(text[i+1] == '"') {temp[temp_counter] = text[i+1];}
+			if(text[i+1] == 't') {temp[temp_counter] = '\t';}
+			if(text[i+1] == 'n') {temp[temp_counter] = '\n';}
+			if(text[i+1] == 'r') {temp[temp_counter] = '\r'; //ask dz about r
 		}
-			if(text[i+1] == 't') {
-				temp[temp_counter] = '\t';
-		}
-			if(text[i+1] == 'n') {
-				temp[temp_counter] = '\n';
-		}
-			if(text[i+1] == 'r') {
-				temp[temp_counter] = '\r'; //ask dz about r
-		}
-			if(text[i+1] == '\\') {
-				temp[temp_counter] = '\\';
+			if(text[i+1] == '\\') {temp[temp_counter] = '\\';
 		} //remaining backslash??
 			//text_length--; //for realloc
 		}
-		else {
-			temp[temp_counter] = text[i];
-			temp_counter++;
-		}
+		else {temp[temp_counter] = text[i];temp_counter++;}
 */
+
+
 		printf("text[%i] = %c\n", i,text[i]);
 	}
 
