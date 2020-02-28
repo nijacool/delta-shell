@@ -26,6 +26,7 @@ char *sudba_make_string(char *text)
 				case '\\': temp[temp_counter] = '\\';break;
 			//if(text[i+1] == '\\') {temp[temp_counter] = '\\';} //remaining backslash??
 			//text_length--; //for realloc
+				default: temp[temp_counter] = text[i+1];break;
 			}	
 			temp_counter++;
 			i++;
