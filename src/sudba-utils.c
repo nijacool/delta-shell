@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "sudba.h"
-//"heyquote\"new tab\tnewline\nnewr\r"hey
-//"heyquote\"new tab\tnew line\nrnewr\r51521"
-//"heyquote\"new tab\tnew line\nnewr\r51521"
+//"heyquote\"new tab\tnewline\nnewr\r"hey //DEBUGGING. WILL DELETE
+//"heyquote\"new tab\tnew line\nrnewr\r51521" //DEBUGGING. WILL DELETE
+//"heyquote\"new tab\tnew line\nnewr\r51521"  //DEBUGGING. WILL DELETE
+//"quote\"newline\nslash\\doubleslash\\\\randomtab\trandomk\kdone!"yes  //DEBUGGING. WILL DELETE
+
 
 char *sudba_make_string(char *text)
 {		
@@ -12,35 +14,43 @@ char *sudba_make_string(char *text)
   	char *temp = malloc(text_length+1);
 	int temp_counter = 0;
 	for (int i = 1; i < text_length-1; i++) {
+		printf("text[%i] = %c\n",i,text[i]);
 		if (text[i] == '\\') {
 			switch(text[i+1]){
-				case '"': temp[temp_counter] = text[i+1];break;
-			//if(text[i+1] == '"') {temp[temp_counter] = text[i+1];}
-				case 't': temp[temp_counter] = '\t';break;
-			//if(text[i+1] == 't') {temp[temp_counter] = '\t';}
-				case 'n': temp[temp_counter] = '\n';break;
-			//if(text[i+1] == 'n') {temp[temp_counter] = '\n';}
-				case 'r': temp[temp_counter] = '\r';break;
-			//if(text[i+1] == 'r') {temp[temp_counter] = '\r'; //ask dz about r
-			//}
-				case '\\': temp[temp_counter] = '\\';break;
-			//if(text[i+1] == '\\') {temp[temp_counter] = '\\';} //remaining backslash??
-			//text_length--; //for realloc
-				default: temp[temp_counter] = text[i+1];break;
-			}	
-			temp_counter++;
-			i++;
+				case '\\': 
+					temp[temp_counter] = '\\';
+					break;
+				case 'n':
+					temp[temp_counter] = '\n';
+					break;
+				case 't':
+					temp[temp_counter] = '\t';
+					break;
+				case 'r':
+					temp[temp_counter] = '\r';
+					break;
+				case '"':
+					temp[temp_counter] = '"';
+					break;
+				default:
+					temp[temp_counter] = text[i+1];
+					break;
+			}
+				i++;
+				temp_counter++;
 		}
 		else {
 			temp[temp_counter] = text[i];
 			temp_counter++;
 		}
-		printf("text[%i] = %c\n", i,text[i]); //for debugging. will delete.
 	}
-	temp[temp_counter+1] = '\0';
-	printf("temp counter: %i\n",temp_counter);
-	temp = realloc(temp,temp_counter+1); //this code is buggy
-	printf("text to return: %s\n",temp);
+	temp[temp_counter] = '\0';
+	printf("----------------------------------------------\n"); //DEBUGGING. WILL DELETE
+	for (int j = 0; j < temp_counter+1; j++) {  //DEBUGGING. WILL DELETE
+		printf("temp[%i] = %c\n",j,temp[j]);  //DEBUGGING. WILL DELETE
+	}
+	printf("temp_counter = %i\nFinal string: %s\n",temp_counter,temp);  //DEBUGGING. WILL DELETE
+	temp = realloc(temp,temp_counter); 
   return temp; //was originally text
 }
 
