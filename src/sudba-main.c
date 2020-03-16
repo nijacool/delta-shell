@@ -44,7 +44,6 @@ int main(int argn, char *argv[])
 {
   int status = sudba_initialize(argn, argv);
   if (status == false) return EXIT_FAILURE;
-  
   // This lines fakes reading from a socket
   // As written, it reads from the standard input (that is, from the keyboard)
   int parse_result = sudba_parse(0);

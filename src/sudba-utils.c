@@ -7,9 +7,11 @@ char *sudba_make_string(char *text)
 {		
 	int text_length = strlen(text); 
   	char *temp = malloc(text_length+1);
+	if (temp == NULL) { 
+		return NULL; //"If malloc fails, return null"
+	}
 	int temp_counter = 0;
 	for (int i = 1; i < text_length-1; i++) {
-		printf("text[%i] = %c\n",i,text[i]);
 		if (text[i] == '\\') {
 			switch(text[i+1]){
 				case '\\': 
@@ -40,7 +42,6 @@ char *sudba_make_string(char *text)
 		}
 	}
 	temp[temp_counter] = '\0';
-
 	temp = realloc(temp,temp_counter); 
   return temp; 
 }
