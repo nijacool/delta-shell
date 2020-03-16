@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "sudba.h"
-//"heyquote\"new tab\tnewline\nnewr\r"hey //DEBUGGING. WILL DELETE
-//"heyquote\"new tab\tnew line\nrnewr\r51521" //DEBUGGING. WILL DELETE
-//"heyquote\"new tab\tnew line\nnewr\r51521"  //DEBUGGING. WILL DELETE
-//"quote\"newline\nslash\\doubleslash\\\\randomtab\trandomk\kdone!"yes  //DEBUGGING. WILL DELETE
-
 
 char *sudba_make_string(char *text)
 {		
@@ -45,13 +40,9 @@ char *sudba_make_string(char *text)
 		}
 	}
 	temp[temp_counter] = '\0';
-	printf("----------------------------------------------\n"); //DEBUGGING. WILL DELETE
-	for (int j = 0; j < temp_counter+1; j++) {  //DEBUGGING. WILL DELETE
-		printf("temp[%i] = %c\n",j,temp[j]);  //DEBUGGING. WILL DELETE
-	}
-	printf("temp_counter = %i\nFinal string: %s\n",temp_counter,temp);  //DEBUGGING. WILL DELETE
+
 	temp = realloc(temp,temp_counter); 
-  return temp; //was originally text
+  return temp; 
 }
 
 bool sudba_exists(char *table) {
