@@ -1,79 +1,60 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include "sudba.h"
 
-char *sudba_make_string(char *text)
-{		
-	int text_length = strlen(text); 
-  	char *temp = malloc(text_length+1);
-	if (temp == NULL) { 
-		return NULL; //"If malloc fails, return null"
-	}
-	int temp_counter = 0;
-	for (int i = 1; i < text_length-1; i++) {
-		if (text[i] == '\\') {
-			switch(text[i+1]){
-				case '\\': 
-					temp[temp_counter] = '\\';
-					break;
-				case 'n':
-					temp[temp_counter] = '\n';
-					break;
-				case 't':
-					temp[temp_counter] = '\t';
-					break;
-				case 'r':
-					temp[temp_counter] = '\r';
-					break;
-				case '"':
-					temp[temp_counter] = '"';
-					break;
-				default:
-					temp[temp_counter] = text[i+1];
-					break;
-			}
-				i++;
-				temp_counter++;
-		}
-		else {
-			temp[temp_counter] = text[i];
-			temp_counter++;
-		}
-	}
-	temp[temp_counter] = '\0';
-	temp = realloc(temp,temp_counter); 
-  return temp; 
+char *sudba_make_string(char *text) {
+  int text_length = strlen(text); 
+  char *temp = malloc(text_length + 1);
+  if (!temp)
+    return NULL;
+
+  int j = 0;
+  for (int i = 1; /* skip the first " */
+       i < text_length - 1; /* skip the last " */
+       i++, j++) {
+    if (text[i] == '\\') { /* if an escape character */
+      i++;
+      switch(text[i]) {
+      case '\\': 
+	temp[j] = '\\';
+	break;
+      case 'n':
+	temp[j] = '\n';
+	break;
+      case 't':
+	temp[j] = '\t';
+	break;
+      case 'r':
+	temp[j] = '\r';
+	break;
+      case '"':
+	temp[j] = '"';
+	break;
+      default:
+	temp[j] = text[i];
+	break;
+      }
+    } else
+      temp[j] = text[i];
+  }
+  temp[j] = '\0'; /* NULL-terminate */
+  temp = realloc(temp, j + 1); /* Trim as needed */
+  return text;
 }
 
 bool sudba_exists(char *table) {
-
-	FILE *fptr;
-	char frm[strlen(table)+strlen(DB_SCHEMA_EXT)+1];
-	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT); 
-	char MYD[strlen(DB_WD)+strlen(table)+strlen(DB_DATA_EXT)+1];
-	strcpy(MYD,table); strcat(MYD,DB_DATA_EXT);
-
-	if ((fptr = fopen(frm,"r")) == NULL) {
-		return false;
-	}
-		fclose(fptr);
-	if ((fptr = fopen(MYD,"r")) == NULL) {
-		return false;
-	}
-		fclose(fptr);
-	if ((fptr = fopen(frm,"a")) == NULL) {
-		return false;
-	}
-		fclose(fptr);
-	if ((fptr = fopen(MYD,"a")) == NULL) {
-		return false;
-	}
-		fclose(fptr);
-	
-  /* 2 */
-  // Your code goes here
-  return true;
+  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)];
+  char data  [strlen(table) + sizeof(DB_DATA_EXT  )];
+  sprintf(schema, "%s" DB_SCHEMA_EXT, table);
+  sprintf(data  , "%s" DB_DATA_EXT  , table);
+  
+  FILE *fptr;
+  /* Are both table files readable and writable? */
+  return (fptr = fopen(schema, "r")) && !fclose(fptr)
+      && (fptr = fopen(schema, "a")) && !fclose(fptr)
+      && (fptr = fopen(data,   "r")) && !fclose(fptr)
+      && (fptr = fopen(data,   "a")) && !fclose(fptr); 
 }
 
 void sudba_lock(char *table) {
@@ -84,3 +65,10 @@ void sudba_unlock(char *table) {
   // Do not modify
 }
 
+void *my_malloc(size_t size) {
+  return malloc(size);
+}
+
+void *my_realloc(void *ptr, size_t size) {
+  return realloc(ptr, size);
+}

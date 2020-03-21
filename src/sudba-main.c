@@ -3,8 +3,8 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include "susql-parser.h"
 #include "sudba.h"
+#include "susql-parser.h"
 
 /* Port for the server */
 static int PORT = 8000;
@@ -44,6 +44,7 @@ int main(int argn, char *argv[])
 {
   int status = sudba_initialize(argn, argv);
   if (status == false) return EXIT_FAILURE;
+  
   // This lines fakes reading from a socket
   // As written, it reads from the standard input (that is, from the keyboard)
   int parse_result = sudba_parse(0);
@@ -53,5 +54,9 @@ int main(int argn, char *argv[])
 /* Error reporting function; do not change */
 void yyerror(YYLTYPE* yyllocp, yyscan_t scanner, const char* s)
 {
+  // Make some compilers happy
+  scanner = 0;
+  yyllocp = NULL;
+  
   fprintf(stdout, HTTP_VER " 400 Bad Request %s\n\r", s);
 }

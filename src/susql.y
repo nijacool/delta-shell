@@ -5,13 +5,16 @@
 %code top {
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "sudba.h"
  }
+
 %code requires {
   int sudba_parse(int socket /* unused */);
   typedef void* yyscan_t;
   FILE *get_yyout(yyscan_t scanner);
  }
+
 %code {
   int yylex(YYSTYPE* yylvalp, YYLTYPE* yyllocp, yyscan_t scanner);
   void yyerror(YYLTYPE* yyllocp, yyscan_t unused, const char* msg);
@@ -21,6 +24,8 @@
   int i;
   float f;
   char *s;
+  Column column;
+  Columns columns;
   }
 
 /* Data types */
@@ -48,6 +53,10 @@
 %token YY_UPDATE
 %token YY_VALUES
 %token YY_WHERE
+
+%type <column> type spec
+%type <columns> spec-list
+
 %start script
 
 %%
@@ -57,7 +66,7 @@ script:
 | script query ';'
 
 query:
-  create-query { fputs("200 created\n", stderr); }
+  create-query 
 | drop-query   
 | insert-query { fputs("200 inserted\n", stderr); }
 | select-query { fputs("200 selected\n", stderr); }
@@ -66,27 +75,39 @@ query:
 ;
 
 create-query:
-  YY_CREATE YY_TABLE YY_ID '(' specs ')';
+  YY_CREATE YY_TABLE YY_ID '(' spec-list ')' {
+    sudba_create_database($3, $5);
+  };
 
-specs:
-  spec
-| specs ',' spec
+spec-list: /* a comma-separated list of column declarations */
+  spec {
+    /* The first column declaration */
+    $$.declarations = malloc(sizeof(Column));
+    $$.declarations[0] = $1;
+    $$.number = 1;
+  }
+| spec-list ',' spec {
+  /* More column declarations */
+  $$.declarations = realloc($1.declarations, sizeof(Column) * ($1.number + 1));
+  $$.declarations[$$.number] = $3;
+  $$.number++;
+  }
 ;
 
-spec:
-  YY_ID type ;
+spec: /* column name and datatype, as in "id int, name char(16)" */
+  YY_ID type { $2.name = $1; $$ = $2; } ;
 
-type:
-  YY_INT
-| YY_FLOAT
-| YY_CHR '(' YY_INTNUM ')'
+type: /* on of the three supported datatypes */
+  YY_INT                   { Column c = { COL_INT,   0, NULL }; $$ = c; } 
+| YY_FLOAT                 { Column c = { COL_FLOAT, 0, NULL }; $$ = c; } 
+| YY_CHR '(' YY_INTNUM ')' { Column c = { COL_STR,  $3, NULL }; $$ = c; } 
 ;
 
 drop-query:
   YY_DROP YY_TABLE YY_ID { sudba_drop_database($3); }
 ;
 
-insert-query:
+insert-query: /* TODO */
   YY_INSERT YY_INTO YY_ID YY_VALUES '(' valist ')'
 ;
 
@@ -101,13 +122,13 @@ value:
 | YY_STRING
 ;
 
-select-query:
-  YY_SELECT columns YY_FROM tables where-clause
+select-query: /* TODO */
+  YY_SELECT column-list YY_FROM tables where-clause
 ;
 
-columns:
+column-list:
   column
-| columns ',' column
+| column-list ',' column
 ;
 
 column:
@@ -126,30 +147,30 @@ where-clause:
 | YY_WHERE condition
 ;
 
-column-spec:
+column-ref:
   YY_ID
 | YY_ID '.' YY_ID
 ;
 
 column-or-val:
-  column-spec
+  column-ref
 | value
 ;
 
 condition:
-  column-spec '=' column-or-val
-| column-spec '>' column-or-val
-| column-spec '<' column-or-val
-| column-spec YY_NEQ column-or-val
-| column-spec YY_GE column-or-val
-| column-spec YY_LE column-or-val
+  column-ref '='    column-or-val
+| column-ref '>'    column-or-val
+| column-ref '<'    column-or-val
+| column-ref YY_NEQ column-or-val
+| column-ref YY_GE  column-or-val
+| column-ref YY_LE  column-or-val
 ;
 
-delete-query:
+delete-query: /* TODO */
   YY_DELETE YY_FROM YY_ID where-clause
 ;
 
-update-query:
+update-query: /* TODO */
   YY_UPDATE YY_ID YY_SET YY_ID '=' column-or-val where-clause
 ; 
 

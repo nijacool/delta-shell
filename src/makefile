@@ -37,6 +37,4 @@ clean:
 
 test: $(TARGET) test.sql
 	@mkdir $(WD) || echo "But it's ok!"
-	@touch $(WD)/my_data.frm
-	@touch $(WD)/my_data.MYD
 	@cat test.sql | ./$(TARGET) 8888

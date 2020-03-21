@@ -1,10 +1,11 @@
-# Are comments allowed?
--- Are comments allowed?
-create table my_data (id int, name char(15), age float);
-insert into my_data values (10, "Bob Smith", 23.7);
-select age from my_data where id=10;
-update my_data set name="Robert Smith" where age>25;
-delete from my_data where id <=10;
-select * from my_data;
-drop table my_data;
-^end^
+-- SuSQL test file
+# Must fail
+drop table students; 
+# Must fail 
+create table students(name char(16), age int, name char(1), gpa float); 
+create table students(name char(16), age int, gender char(1), gpa float);
+# Must fail
+create table students(name char(16), age int, gender char(1), gpa float);
+drop table students;
+# Must fail
+drop table students; 
