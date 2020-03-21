@@ -13,7 +13,8 @@ bool sudba_drop_database(char *table) {
   } else {  
     // Your code goes here
 	char frm[strlen(table)+strlen(DB_SCHEMA_EXT)+1];
-	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT); 
+	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT);
+	// DZ: Non need for strlen(DB_WD)
 	char MYD[strlen(DB_WD)+strlen(table)+strlen(DB_DATA_EXT)+1];
 	strcpy(MYD,table); strcat(MYD,DB_DATA_EXT);
 	int status_frm; 

@@ -50,7 +50,8 @@ bool sudba_exists(char *table) {
 
 	FILE *fptr;
 	char frm[strlen(table)+strlen(DB_SCHEMA_EXT)+1];
-	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT); 
+	strcpy(frm,table); strcat(frm,DB_SCHEMA_EXT);
+	// DZ: strlen(DB_WD) - why? You do not use it
 	char MYD[strlen(DB_WD)+strlen(table)+strlen(DB_DATA_EXT)+1];
 	strcpy(MYD,table); strcat(MYD,DB_DATA_EXT);
 
