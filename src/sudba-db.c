@@ -33,6 +33,18 @@ bool sudba_create_database(char *table, Columns columns) {
   sudba_lock(table);
 
   bool status = true;
+  if (sudba_exists(table)) { fprintf(stdout, HTTP_VER " 412 Precondition Failed table already exists %s\n\r", table);} //is this the right error?
+  char *column_names[columns.number];
+  for (int i = 0; i < columns.number; i++) {
+		for (int j = 0; j < columns.number; j++) { //I think there is a better way instead of columns.number. Maybe sizeOf(column_names)
+			if (!strcmp(columns.declarations[i].name,column_names[j])) {
+					//error message
+				}
+		}
+		column_names[i] = columns.declarations[i].name;
+	}
+	
+	
 
   // This loop is for testing. Please remove it before submitting
   /*
