@@ -66,12 +66,14 @@ void sudba_unlock(char *table) {
 }
 
 void *my_malloc(size_t size) {
-	int s;
+	char *s;
 	s = malloc(size);
 	if (s == NULL) { abort(); }
   return s;
 }
 
 void *my_realloc(void *ptr, size_t size) {
-  return realloc(ptr, size);
+	char *s;
+	s = realloc(ptr, size);
+  return s;
 }

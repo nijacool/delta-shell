@@ -30,31 +30,51 @@ bool sudba_drop_database(char *table) {
 }
 
 bool sudba_create_database(char *table, Columns columns) {
-  sudba_lock(table);
+  sudba_lock(table);	
 
   bool status = true;
   if (sudba_exists(table)) { fprintf(stdout, HTTP_VER " 412 Precondition Failed table already exists %s\n\r", table);} //is this the right error?
-  char *column_names[columns.number];
+	else {
   for (int i = 0; i < columns.number; i++) {
-		for (int j = 0; j < columns.number; j++) { //I think there is a better way instead of columns.number. Maybe sizeOf(column_names)
-			if (!strcmp(columns.declarations[i].name,column_names[j])) {
-					//error message
+		for (int j = i+1; j < columns.number; j++) { //I think there is a better way instead of columns.number. Maybe sizeOf(column_names)
+			if (!strcmp(columns.declarations[i].name,columns.declarations[j].name)) {
+					printf("FOR TESTING!: The duplicates are [%i] %s [%i] %s\n" ,i,columns.declarations[i].name,j,columns.declarations[j].name);
+					fprintf(stdout, HTTP_VER " 412 Precondition Failed duplicate column names in table %s\n\r", table);
+					//break? //question for DZ: why did the other stuff not get repeated?
 				}
 		}
-		column_names[i] = columns.declarations[i].name;
 	}
-	
+  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; //copied from sudba-utils.c
+  char data  [strlen(table) + sizeof(DB_DATA_EXT  )];
+  FILE *frm = fopen(schema, "w");
+  FILE *myd = fopen(data, "w"); //We will have to catch errors, but do this later. 
+  fclose(myd); //Since we are just creating an empty .myd.
+  for (int i = 0; i < columns.number; i++) {
+	write(1, &columns.declarations[i].type, 4); //not sure if this is right
+	/*if (columns.declarations[i].type != 2) {
+	write(1, columns.declarations[i].width, 4);
+	}
+	else {
+	write(1, columns.declarations[i].width, 4); //0 for non string columns
+	} */
+	int strl = strlen(columns.declarations[i].name);
+	write(1, &strl, 4); //not sure if right. writes the length of the name
+	write(1, columns.declarations[i].name, strl);
+    }
+	}
 	
 
   // This loop is for testing. Please remove it before submitting
-  /*
+  
     for (int i = 0; i < columns.number; i++) {
-    fprintf(stderr, "%i %i %s\n",
+    fprintf(stderr, "Start: %i %i %lu %s\n",
     columns.declarations[i].type,
     columns.declarations[i].width,
+    strlen(columns.declarations[i].name), //CHANGED WIDTH to name
+    //columns.declarations[i].length, //ADDED FOR DEBUGGING
     columns.declarations[i].name);
     }
-  */
+  
 
   // Check if the table already exists. If it does, report error 412
 
