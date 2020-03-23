@@ -46,9 +46,29 @@ bool sudba_create_database(char *table, Columns columns) {
 	}
   char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; //copied from sudba-utils.c
   char data  [strlen(table) + sizeof(DB_DATA_EXT  )];
-  FILE *frm = fopen(schema, "w");
-  FILE *myd = fopen(data, "w"); //We will have to catch errors, but do this later. 
-  fclose(myd); //Since we are just creating an empty .myd.
+  sprintf(schema, "%s" DB_SCHEMA_EXT, table);
+  sprintf(data  , "%s" DB_DATA_EXT  , table);
+
+  //added by Cristian (open file, and check if they can be created/open or not)
+  FILE *myd = fopen(schema, "w");
+  fclose(myd);//Since we are just creating an empty .myd.
+  if(myd == NULL){
+	//delete myd
+	if(remove(myd)==0){
+		fprint(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table);
+	};
+	status = false;
+  }else{
+	FILE *myd = fopen(data, "w");
+	if(frm == NULL){
+		fclose(frm);
+		if((remove(frm)==0)&&(remove(mys)==0)){ //delete frm and myd
+			fprint(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table);
+	};
+	status = false;
+  }
+	//end 
+
   for (int i = 0; i < columns.number; i++) {
 	write(1, &columns.declarations[i].type, 4); //not sure if this is right
 	/*if (columns.declarations[i].type != 2) {
