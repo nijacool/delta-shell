@@ -4,7 +4,7 @@
 #include "sudba.h"
 
 char *sudba_make_string(char *text) {
-  int text_length = strlen(text); 
+  int text_length = strlen(text);
   char *temp = malloc(text_length + 1);
   if (!temp)
     return NULL;
@@ -16,7 +16,7 @@ char *sudba_make_string(char *text) {
     if (text[i] == '\\') { /* if an escape character */
       i++;
       switch(text[i]) {
-      case '\\': 
+      case '\\':
 	temp[j] = '\\';
 	break;
       case 'n':
@@ -48,13 +48,13 @@ bool sudba_exists(char *table) {
   char data  [strlen(table) + sizeof(DB_DATA_EXT  )];
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
   sprintf(data  , "%s" DB_DATA_EXT  , table);
-  
+
   FILE *fptr;
   /* Are both table files readable and writable? */
   return (fptr = fopen(schema, "r")) && !fclose(fptr)
       && (fptr = fopen(schema, "a")) && !fclose(fptr)
       && (fptr = fopen(data,   "r")) && !fclose(fptr)
-      && (fptr = fopen(data,   "a")) && !fclose(fptr); 
+      && (fptr = fopen(data,   "a")) && !fclose(fptr);
 }
 
 void sudba_lock(char *table) {
@@ -75,5 +75,6 @@ void *my_malloc(size_t size) {
 void *my_realloc(void *ptr, size_t size) {
 	char *s;
 	s = realloc(ptr, size);
+  if (s == NULL) { abort (); }
   return s;
 }
