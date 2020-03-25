@@ -44,28 +44,32 @@ bool sudba_create_database(char *table, Columns columns) {
 				}
 		}
 	}
-  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; //copied from sudba-utils.c
-  char data  [strlen(table) + sizeof(DB_DATA_EXT  )];
+  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; //copied from sudba-utils.c SCHEMA IS FRM
+  char data  [strlen(table) + sizeof(DB_DATA_EXT  )]; //DATA IS MYD
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
   sprintf(data  , "%s" DB_DATA_EXT  , table);
 
   //added by Cristian (open file, and check if they can be created/open or not)
-  FILE *myd = fopen(schema, "w");
+  FILE *myd = fopen(data, "w");
   fclose(myd);//Since we are just creating an empty .myd.
   if(myd == NULL){
 	//delete myd
-	if(remove(myd)==0){
-		fprint(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table);
+	if(remove(data)==0){ //changed "myd" to "data", since myd is a file but the function takes a char
+		//fprint(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table); //THESE CODES ARE BUGGY
 	};
+	//what if remove was unsuccessful (e.g. remove(data) returns -1)?
 	status = false;
-  }else{
-	FILE *myd = fopen(data, "w");
+  }
+
+else{
+	FILE *frm = fopen(schema, "w");
 	if(frm == NULL){
-		fclose(frm);
-		if((remove(frm)==0)&&(remove(mys)==0)){ //delete frm and myd
-			fprint(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table);
-	};
-	status = false;
+		fclose(frm); //i guess this right? i'm not sure though. 
+		status = false; //false because if frm is null, meaning the table is not created
+		if((remove(schema)==0)&&(remove(data)==0)){ //delete frm and myd
+		//what if remove was unsuccessful (e.g. remove(data) returns -1)?
+			//fprintf(stdout,HTTP_VER, "500 Internal Server Error table cannot be created." "%s\n\r", table); //THESE CODES ARE BUGGY
+	}; 
   }
 	//end 
 
@@ -81,7 +85,6 @@ bool sudba_create_database(char *table, Columns columns) {
 	write(1, &strl, 4); //not sure if right. writes the length of the name
 	write(1, columns.declarations[i].name, strl);
     }
-	}
 	
 
   // This loop is for testing. Please remove it before submitting
@@ -111,4 +114,4 @@ bool sudba_create_database(char *table, Columns columns) {
   free(columns.declarations);
   free(table);
   return status;
-}
+}}
