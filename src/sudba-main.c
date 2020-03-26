@@ -43,7 +43,7 @@ static bool sudba_initialize(int argn, char *argv[])
 int main(int argn, char *argv[])
 {
   printf("1We are here in sudba-main.c");
-  Column test_declarations = {.type = 7, .width = 4, .name = "Test"};
+  Column test_declarations = {.type = 2147483647, .width = 32767, .name = "ttttt"};
   Columns test_COLUMNS = {.number = 1 , .declarations = &test_declarations};
   printf("2We are here in sudba-main.c");
   sudba_test("test_column", test_COLUMNS);
