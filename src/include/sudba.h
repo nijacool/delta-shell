@@ -34,7 +34,7 @@ void sudba_unlock(char *table);
 bool sudba_exists(char *table);
 
 // Database functions
-bool sudba_test(char *table, Columns columns);
+bool sudba_test(char *table);
 bool sudba_drop_database(char *table);
 bool sudba_create_database(char *table, Columns columns);
 #endif

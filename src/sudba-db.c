@@ -33,26 +33,16 @@ bool sudba_drop_database(char *table) {
   return status;
 }
 
-bool sudba_test(char *table, Columns columns){ //this function is for testing. will delete
-  int frm = open("./test_column.MYD", O_CREAT|O_RDWR, 0666);
-
-
-  for (int i = 0; i < columns.number; i++) {
-    //char type_buffer[4]; //Q: is this okay as buffer to write? since the hw asked us for it to be an integer binary number, but ths buffer would be an integer, in the form of a char written.
-    //char width_buffer[2]; //Q: same with the width buffer, which wants a short binary number
-    //char name_length_buffer[2];
-    //char name_buffer[32];
-    //sprintf(type_buffer, "%d", columns.declarations[i].type);
-    write(frm,&columns.declarations[i].type,sizeof(int));//sizeof(int) or size of(the type)?)
-    //sprintf(width_buffer, "%d", columns.declarations[i].width);
-    write(frm,&columns.declarations[i].width,sizeof(short));
-    //sprintf(name_length_buffer, "%lu", strlen(columns.declarations[i].name));
-	//int temp = static_cast<int>(strlen(columns.declarations[i].name));
-    //write(frm,(int)strlen(columns.declarations[i].name),sizeof(short)); //Q: how do you determine the size of name_length so that it prints the exact bytes?
-    //strcpy(name_buffer,columns.declarations[i].name);
-    write(frm,&columns.declarations[i].name,strlen(columns.declarations[i].name)*sizeof(char)); //Q: Do we even need a name buffer since we can just write the name pointer directly?
-  }
-  close(frm);
+bool sudba_test(char *table){ //this function is for testing. will delete
+  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; 
+  //char data  [strlen(table) + sizeof(DB_DATA_EXT  )]; 
+  sprintf(schema, "%s" DB_SCHEMA_EXT, table);
+  //sprintf(data  , "%s" DB_DATA_EXT  , table);
+  int s_read = open(schema, O_RDONLY);
+	printf("s_read value: %i\n",s_read);
+  char *buffer = malloc(36);
+  printf("%zd\n", read(s_read, buffer,36));
+	puts(buffer);
   return false;
 
 }
@@ -111,8 +101,9 @@ bool sudba_create_database(char *table, Columns columns) {
   for (int i = 0; i < columns.number; i++) {
 	write(frm,&columns.declarations[i].type,sizeof(int)); 
 	write(frm,&columns.declarations[i].width,sizeof(short)); //Writes the type as a SHORT binary number QQ: 0 for non-string columns? Is this a condition sql provides or we must implement an if?
-	//write(frm,(int)strlen(columns.declarations[i].name),sizeof(short)); //Writes the length of the name as a SHORT binary number //QQ: Unsure how to do this. Need to cast to int?
-	write(frm,&columns.declarations[i].name,strlen(columns.declarations[i].name)*sizeof(char));
+	int name_length = strlen(columns.declarations[i].name);
+	write(frm,&name_length,sizeof(short)); //Writes the length of the name as a SHORT binary number //QQ: Unsure how to do this. Need to cast to int?
+	write(frm,&columns.declarations[i].name,name_length*sizeof(char));
 	/*if (columns.declarations[i].type != 2) {
 	write(1, columns.declarations[i].width, 4);
 	}
@@ -120,18 +111,10 @@ bool sudba_create_database(char *table, Columns columns) {
 	write(1, columns.declarations[i].width, 4); //0 for non string columns
 	} */
     }
+	close(frm);
   
 
-  // This loop is for testing. Please remove it before submitting
-
-    for (int i = 0; i < columns.number; i++) {
-    fprintf(stderr, "Start: %i %i %lu %s\n",
-    columns.declarations[i].type,
-    columns.declarations[i].width,
-    strlen(columns.declarations[i].name), //CHANGED WIDTH to name
-    //columns.declarations[i].length, //ADDED FOR DEBUGGING
-    columns.declarations[i].name);
-    }
+ 
 
     } 
 
@@ -145,9 +128,8 @@ bool sudba_create_database(char *table, Columns columns) {
   // If failed, delete the .MYD file, report error 500
 
   // Report success 201
-
   sudba_unlock(table);
-  free(columns.declarations);
-  free(table);
+  //free(columns.declarations);
+  //free(table);
   return status;
   }

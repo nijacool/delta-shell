@@ -45,8 +45,10 @@ int main(int argn, char *argv[])
   printf("1We are here in sudba-main.c");
   Column test_declarations = {.type = 2147483647, .width = 32767, .name = "ttttt"};
   Columns test_COLUMNS = {.number = 1 , .declarations = &test_declarations};
-  printf("2We are here in sudba-main.c");
-  sudba_test("test_column", test_COLUMNS);
+  printf("2We are here in sudba-main.c\n");
+	
+  sudba_create_database("test_column", test_COLUMNS);
+  sudba_test("test_column");
   int status = sudba_initialize(argn, argv);
   if (status == false) return EXIT_FAILURE;
 
