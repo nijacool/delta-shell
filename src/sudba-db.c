@@ -40,7 +40,7 @@ bool sudba_test(char *table){ //this function is for testing. will delete
   //sprintf(data  , "%s" DB_DATA_EXT  , table);
   int s_read = open(schema, O_RDONLY);
 	printf("s_read value: %i\n",s_read);
-  char *buffer = malloc(36);
+  char *buffer = my_malloc(36);
   printf("%zd\n", read(s_read, buffer,36));
 	puts(buffer);
   return false;
@@ -54,15 +54,16 @@ bool sudba_create_database(char *table, Columns columns) {
   bool status = true;
 
 
-  if (sudba_exists(table)) { //Checks if table exists, if it does, print error QQ: Do we need to change status to false on errors?
+  if (sudba_exists(table)) { 
 	fprintf(stdout, HTTP_VER " 412 Precondition Failed %s already exists\n\r", table);
+        status = false; //QQ: does status become false at the event of an error?
   }
 
 
   else {
   	for (int i = 0; i < columns.number; i++) {
 		for (int j = i+1; j < columns.number; j++) {
-			//if (have_duplicate = true) { break; } //QQ: What about this extra if to break everytime?
+			//if (have_duplicate = true) { break; } //QQ: What about this extra if to break everytime? or i = columns.number
 			if (!strcmp(columns.declarations[i].name,columns.declarations[j].name)) {
 					have_duplicate = true;
 					break;
@@ -94,22 +95,23 @@ bool sudba_create_database(char *table, Columns columns) {
 		remove(schema);
 		remove(data); 
       		fprintf(stdout, HTTP_VER "500 Internal Server Error table cannot be created. %s\n\r", table);
-		status = false; 
+		status = false; //QQ: does status become false at the event of an error?
 	}
   }
 
   for (int i = 0; i < columns.number; i++) {
 	write(frm,&columns.declarations[i].type,sizeof(int)); 
-	write(frm,&columns.declarations[i].width,sizeof(short)); //Writes the type as a SHORT binary number QQ: 0 for non-string columns? Is this a condition sql provides or we must implement an if?
-	int name_length = strlen(columns.declarations[i].name);
-	write(frm,&name_length,sizeof(short)); //Writes the length of the name as a SHORT binary number //QQ: Unsure how to do this. Need to cast to int?
-	write(frm,&columns.declarations[i].name,name_length*sizeof(char));
-	/*if (columns.declarations[i].type != 2) {
-	write(1, columns.declarations[i].width, 4);
+
+	if (columns.declarations[i].type != 2) {
+	write(frm, 0, sizeof(short));
 	}
 	else {
-	write(1, columns.declarations[i].width, 4); //0 for non string columns
-	} */
+	write(frm,&columns.declarations[i].width,sizeof(short)); //Writes the type as a SHORT binary number QQ: 0 for non-string columns? Is this a condition sql provides or we must implement an if?
+	} 
+	
+	int name_length = strlen(columns.declarations[i].name);
+	write(frm,&name_length,sizeof(short)); //Writes the length of the name as a SHORT binary number //QQ: Unsure how to do this. Need to cast to int?
+	write(frm,&columns.declarations[i].name,name_length*sizeof(char)); //QQ: *sizeof(char)?
     }
 	close(frm);
   
@@ -127,9 +129,10 @@ bool sudba_create_database(char *table, Columns columns) {
   // Create a .frm file according to the requirements.
   // If failed, delete the .MYD file, report error 500
 
-  // Report success 201
+  // Report success 201 
+  fprintf(stdout, HTTP_VER "201 created table %s\n\r", table); //QQ: right report?
   sudba_unlock(table);
-  //free(columns.declarations);
-  //free(table);
+  free(columns.declarations);
+  free(table); //QQ: pointer error in sudba-main
   return status;
   }

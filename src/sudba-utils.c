@@ -5,7 +5,7 @@
 
 char *sudba_make_string(char *text) {
   int text_length = strlen(text);
-  char *temp = malloc(text_length + 1);
+  char *temp = my_malloc(text_length + 1);
   if (!temp)
     return NULL;
 
@@ -39,7 +39,7 @@ char *sudba_make_string(char *text) {
       temp[j] = text[i];
   }
   temp[j] = '\0'; /* NULL-terminate */
-  temp = realloc(temp, j + 1); /* Trim as needed */
+  temp = my_realloc(temp, j + 1); /* Trim as needed */
   return text;
 }
 
