@@ -33,20 +33,6 @@ bool sudba_drop_database(char *table) {
   return status;
 }
 
-bool sudba_test(char *table){ //this function is for testing. will delete
-  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)]; 
-  //char data  [strlen(table) + sizeof(DB_DATA_EXT  )]; 
-  sprintf(schema, "%s" DB_SCHEMA_EXT, table);
-  //sprintf(data  , "%s" DB_DATA_EXT  , table);
-  int s_read = open(schema, O_RDONLY);
-	printf("s_read value: %i\n",s_read);
-  char *buffer = my_malloc(36);
-  printf("%zd\n", read(s_read, buffer,36));
-	puts(buffer);
-  return false;
-
-}
-
 bool sudba_create_database(char *table, Columns columns) {
 
   sudba_lock(table);
