@@ -26,6 +26,8 @@
   char *s;
   Column column;
   Columns columns;
+  Value value;
+  Values values;
   }
 
 /* Data types */
@@ -56,6 +58,8 @@
 
 %type <column> type spec
 %type <columns> spec-list
+%type <value> value
+%type <values> valist
 
 %start script
 
@@ -68,7 +72,7 @@ script:
 query:
   create-query 
 | drop-query   
-| insert-query { fputs("200 inserted\n", stderr); }
+| insert-query
 | select-query { fputs("200 selected\n", stderr); }
 | update-query { fputs("200 updated\n", stderr); }
 | delete-query { fputs("200 deleted\n", stderr); }
@@ -82,13 +86,13 @@ create-query:
 spec-list: /* a comma-separated list of column declarations */
   spec {
     /* The first column declaration */
-    $$.declarations = malloc(sizeof(Column));
+    $$.declarations = my_malloc(sizeof(Column));
     $$.declarations[0] = $1;
     $$.number = 1;
   }
 | spec-list ',' spec {
   /* More column declarations */
-  $$.declarations = realloc($1.declarations, sizeof(Column) * ($1.number + 1));
+  $$.declarations = my_realloc($1.declarations, sizeof(Column) * ($1.number + 1));
   $$.declarations[$$.number] = $3;
   $$.number++;
   }
@@ -107,19 +111,31 @@ drop-query:
   YY_DROP YY_TABLE YY_ID { sudba_drop_database($3); }
 ;
 
-insert-query: /* TODO */
-  YY_INSERT YY_INTO YY_ID YY_VALUES '(' valist ')'
+insert-query:
+  YY_INSERT YY_INTO YY_ID YY_VALUES '(' valist ')' {
+    sudba_insert_into_database($3, $6);
+  }
 ;
 
 valist:
-  value
-| valist ',' value
+  value {
+  /* The first value */
+    $$.values = my_malloc(sizeof(Value));
+    $$.values[0] = $1;
+    $$.number = 1;
+  }
+| valist ',' value {
+  /* More values */
+  $$.values = my_realloc($1.values, sizeof(Value) * ($1.number + 1));
+  $$.values[$$.number] = $3;
+  $$.number++;
+  }
 ;
 
 value:
-  YY_INTNUM
-| YY_FLOATNUM
-| YY_STRING
+  YY_INTNUM   { $$.type = COL_INT;   $$.value.int_val    = $1; }
+| YY_FLOATNUM { $$.type = COL_FLOAT; $$.value.float_val  = $1; }
+| YY_STRING   { $$.type = COL_STR;   $$.value.string_val = $1; }
 ;
 
 select-query: /* TODO */
@@ -132,14 +148,14 @@ column-list:
 ;
 
 column:
-  YY_ID
-| YY_ID '.' YY_ID
+YY_ID { free($1); /* temp measure */ }
+| YY_ID '.' YY_ID { free($1); free($3); /* temp measure */ }
 | '*'
 ;
 
 tables :
-  YY_ID
-| tables ',' YY_ID
+  YY_ID { free($1); /* temp measure */ }
+| tables ',' YY_ID { free($3); /* temp measure */ }
 ;
 
 where-clause:
@@ -148,8 +164,8 @@ where-clause:
 ;
 
 column-ref:
-  YY_ID
-| YY_ID '.' YY_ID
+  YY_ID { free($1); /* temp measure */ }
+| YY_ID '.' YY_ID { free($1); free($3); /* temp measure */ }
 ;
 
 column-or-val:
@@ -167,11 +183,11 @@ condition:
 ;
 
 delete-query: /* TODO */
-  YY_DELETE YY_FROM YY_ID where-clause
+  YY_DELETE YY_FROM YY_ID where-clause { free($3); /* temp measure */ }
 ;
 
 update-query: /* TODO */
-  YY_UPDATE YY_ID YY_SET YY_ID '=' column-or-val where-clause
+YY_UPDATE YY_ID YY_SET YY_ID '=' column-or-val where-clause { free($2); free($4); /* temp measure */ }
 ; 
 
 %%
