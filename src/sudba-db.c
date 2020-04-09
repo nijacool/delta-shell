@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include "sudba.h"
 
 bool sudba_drop_database(char *table) {
@@ -36,8 +37,50 @@ bool sudba_drop_database(char *table) {
 /*
   Read SuSQL schema for the table.
 */
-static bool read_schema (char *table, Columns *columns) {
-  // Your code goes here
+static bool read_schema (char *table, Columns *columns) { //QC: is it right that we are writing into the pointer columns?
+  char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)];
+  sprintf(schema, "%s" DB_SCHEMA_EXT, table);
+  int s = open(schema, O_RDONLY);
+  if (s == -1) { return false;} //QC: 
+  int type;
+  short width;
+  short name_length;
+  char *name;
+  int w=1;
+  int c = 0;
+  //columns->declarations = my_malloc(sizeof(Column)*4); //segmentation fault //Q: How can I initialize an array of declarations?
+  
+  
+  while(w > 0){ //Q: the logic on the while loop is flawed?
+	if ((read(s, &type, sizeof(type))) <= 0) { w = -1; break;}
+	printf("value of w at type: %i\n", w);
+	w= read(s, &width, sizeof(width)); //QC: is our read correct?
+	printf("value of w at width: %i\n", w);
+	w= read(s, &name_length, sizeof(name_length));
+	printf("value of w at name_length: %i\n", w);
+	name = my_malloc(name_length+1);
+	w= read(s, name, name_length);
+	printf("value of w at name: %i\n", w);
+	name[name_length] = '\0';
+	printf("type: %i width: %i name_length: %i n: %s\n",type,width,name_length,name);
+	printf("1We got this far\n");
+	columns->number = 4; //Q?
+	
+	printf("2We got this far\n");
+	
+	columns->declarations[c].type = type;
+	printf("3We got this far\n");
+	columns->declarations[c].width = width;
+	printf("4We got this far name: %s\n",name);
+	columns->declarations[c].name = name; //Q: segmentation fault/coredump?
+	printf("\nc: %i\n",c);
+	c++;
+}
+	printf("c: %i\n",c);
+
+
+ 
+  
   return true;
 }
 
@@ -132,7 +175,14 @@ bool sudba_insert_into_database(char *table, Values values)
   // 2. Read the table schema from the .frm file
   // If the function fails, report error 500
   Columns columns;
-  status = read_schema (table, &columns);
+  columns.declarations = my_malloc(sizeof(Column)*4);//should this even be here?
+  status = read_schema(table, &columns);
+  for (int i = 0; i< columns.number; i++ ) {
+	  printf("INSERT INTO DATABASE: type: %i width: %i name: %s\n",columns.declarations[i].type, columns.declarations[i].width,columns.declarations[i].name);
+	}
+
+
+ 
 
   // 3. Compare the passed values to the columns. The number and types must match
   // If they do not, report error 400
