@@ -47,6 +47,8 @@ static bool read_schema (char *table, Columns *columns) { //QC: is it right that
   char *name;
   int w=1;
   int c = 0;
+  columns->declarations = my_malloc(sizeof(Column)*4);//Q: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
+
   //columns->declarations = my_malloc(sizeof(Column)*4); //segmentation fault //Q: How can I initialize an array of declarations? || QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*number)? how do we find out what "4" would be?
   
   
@@ -170,14 +172,23 @@ bool sudba_insert_into_database(char *table, Values values)
   bool status = true;
 
   // 1. Check if the table already exists. If it does, report error 412
-
+  if(sudba_exists(table)){
+	fprintf(stdout, HTTP_VER " 412 Precondition Failed");
+	status = false;
+}
   // 2. Read the table schema from the .frm file
   // If the function fails, report error 500
   Columns columns;
-  columns.declarations = my_malloc(sizeof(Column)*4);//Q: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
+  
   status = read_schema(table, &columns);
+  if(status == false){
+	fprintf(stdout, HTTP_VER " 500 Internal Server Error");
+}
+
+	if(status == true){
+
   for (int i = 0; i< columns.number; i++ ) {
-	  printf("INSERT INTO DATABASE: type: %i width: %i name: %s\n",columns.declarations[i].type, columns.declarations[i].width,columns.declarations[i].name);
+	  printf("INSERT INTO DATABASE: type: %i width: %i name: %s\n",columns.declarations[i].type, 	  columns.declarations[i].width,columns.declarations[i].name);
 	}///for debugging.
 
  for (int i = 0; i < values.number; i++ ) {
@@ -189,7 +200,7 @@ bool sudba_insert_into_database(char *table, Values values)
 			break;
 		}
 	}
-  
+  }
 //printf("INSERT INTO DATABASE: name: %s age: %i gender:  gpa: %f\n", values.values[0].value.string_val,values.values[1].value.int_val, values.values[3].value.float_val);
 
  
@@ -197,7 +208,7 @@ bool sudba_insert_into_database(char *table, Values values)
   // 3. Compare the passed values to the columns. The number and types must match
   // If they do not, report error 400
   if(status == true) { //Q: what 
-	}
+	
   // 4. Append the values, in the binary form, at the end of the .MYD file
   // without separators or terminators.
   //    Strings shall be written as left-justified, 0-padded character arrays
@@ -210,7 +221,7 @@ bool sudba_insert_into_database(char *table, Values values)
   
   // Report success 200
   fprintf(stdout, HTTP_VER " 200 Inserted into %s\n\r", table);
- 
+ }
   sudba_unlock(table);
   // Free strings
   for(int i = 0; i < values.number; i++ )
