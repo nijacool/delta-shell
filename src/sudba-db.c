@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <ctype.h>
 #include "sudba.h"
 
 bool sudba_drop_database(char *table) {
@@ -48,35 +47,35 @@ static bool read_schema (char *table, Columns *columns) { //QC: is it right that
   char *name;
   int w=1;
   int c = 0;
-  //columns->declarations = my_malloc(sizeof(Column)*4); //segmentation fault //Q: How can I initialize an array of declarations?
+  //columns->declarations = my_malloc(sizeof(Column)*4); //segmentation fault //Q: How can I initialize an array of declarations? || QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*number)? how do we find out what "4" would be?
   
   
-  while(w > 0){ //Q: the logic on the while loop is flawed?
-	if ((read(s, &type, sizeof(type))) <= 0) { w = -1; break;}
-	printf("value of w at type: %i\n", w);
+  while(w > 0){ 
+	if ((read(s, &type, sizeof(type))) <= 0) { w = -1; break;}//QC: the logic on the while loop is flawed?
+	//printf("value of w at type: %i\n", w);
 	w= read(s, &width, sizeof(width)); //QC: is our read correct?
-	printf("value of w at width: %i\n", w);
+	//printf("value of w at width: %i\n", w);
 	w= read(s, &name_length, sizeof(name_length));
-	printf("value of w at name_length: %i\n", w);
+	//printf("value of w at name_length: %i\n", w);
 	name = my_malloc(name_length+1);
 	w= read(s, name, name_length);
-	printf("value of w at name: %i\n", w);
+	//printf("value of w at name: %i\n", w);
 	name[name_length] = '\0';
-	printf("type: %i width: %i name_length: %i n: %s\n",type,width,name_length,name);
-	printf("1We got this far\n");
-	columns->number = 4; //Q?
+	//printf("type: %i width: %i name_length: %i n: %s\n",type,width,name_length,name);
+	//printf("1We got this far\n");
+	columns->number = 4; //Q how do we find out the columns number?
 	
-	printf("2We got this far\n");
+	//printf("2We got this far\n");
 	
-	columns->declarations[c].type = type;
-	printf("3We got this far\n");
+	columns->declarations[c].type = type; //QC: is the assignment right?
+	//printf("3We got this far\n");
 	columns->declarations[c].width = width;
-	printf("4We got this far name: %s\n",name);
-	columns->declarations[c].name = name; //Q: segmentation fault/coredump?
-	printf("\nc: %i\n",c);
+	//printf("4We got this far name: %s\n",name);
+	columns->declarations[c].name = name; //Q: we had segmentation fault/coredump?
+	//printf("\nc: %i\n",c);
 	c++;
 }
-	printf("c: %i\n",c);
+	//printf("c: %i\n",c);
 
 
  
@@ -175,18 +174,30 @@ bool sudba_insert_into_database(char *table, Values values)
   // 2. Read the table schema from the .frm file
   // If the function fails, report error 500
   Columns columns;
-  columns.declarations = my_malloc(sizeof(Column)*4);//should this even be here?
+  columns.declarations = my_malloc(sizeof(Column)*4);//Q: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
   status = read_schema(table, &columns);
   for (int i = 0; i< columns.number; i++ ) {
 	  printf("INSERT INTO DATABASE: type: %i width: %i name: %s\n",columns.declarations[i].type, columns.declarations[i].width,columns.declarations[i].name);
-	}
+	}///for debugging.
 
+ for (int i = 0; i < values.number; i++ ) {
+	  printf("VALUE %i TYPE : %i\n",i,values.values[i].type); //QC: is our understanding of value[i] right?
+	  if (values.values[i].type != columns.declarations[i].type) {
+			fprintf(stdout, HTTP_VER " 400 Invalid Request %s\n\r", table); //Q: Offender?
+			status = false; 
+			printf("\n\n");
+			break;
+		}
+	}
+  
+//printf("INSERT INTO DATABASE: name: %s age: %i gender:  gpa: %f\n", values.values[0].value.string_val,values.values[1].value.int_val, values.values[3].value.float_val);
 
  
 
   // 3. Compare the passed values to the columns. The number and types must match
   // If they do not, report error 400
-
+  if(status == true) { //Q: what 
+	}
   // 4. Append the values, in the binary form, at the end of the .MYD file
   // without separators or terminators.
   //    Strings shall be written as left-justified, 0-padded character arrays
