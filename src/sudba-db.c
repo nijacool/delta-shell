@@ -74,6 +74,7 @@ bool sudba_create_database(char *table, Columns columns) {
 		}
 	 
 	 	if (status == true && have_duplicate == false) {
+		  // DZ: Must check ALL returned values, including close()
 		  for (int i = 0; i < columns.number; i++) {
 			write(frm,&columns.declarations[i].type,sizeof(int)); 
 			write(frm,&columns.declarations[i].width,sizeof(short));
