@@ -13,8 +13,7 @@ drop table students;
 # Must fail
 insert into students values("Jane Jillian Verylongname", 22, "F", 2.12);
 create table students(name char(16), age int, gender char(1), gpa float);
-# Must fail
-insert into students values("Jane Jillian Verylongname", 22, "F", 2.12);
+insert into students values("Jcane Jillian Verylongname", 22, "F", 2.12);
 # Must fail
 insert into students values("Jane Smith", 22, 2.12, "F");
 # Must fail

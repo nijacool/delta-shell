@@ -36,52 +36,42 @@ bool sudba_drop_database(char *table) {
 /*
   Read SuSQL schema for the table.
 */
-static bool read_schema (char *table, Columns *columns) { //QC: is it right that we are writing into the pointer columns?
+static bool read_schema (char *table, Columns *columns) { 
   char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)];
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
   int s = open(schema, O_RDONLY);
-  if (s == -1) { return false;} //QC: 
+  if (s == -1) { 
+	close(s);
+	return false;
+  } 
   int type;
   short width;
   short name_length;
   char *name;
-  int w=1;
-  int c = 0;
-  columns->declarations = my_malloc(sizeof(Column)*4);//Q: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
-
-  //columns->declarations = my_malloc(sizeof(Column)*4); //segmentation fault //Q: How can I initialize an array of declarations? || QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*number)? how do we find out what "4" would be?
-  
-  
+  int w = 1;
+  int count = 0;
+  columns->declarations = my_malloc(sizeof(Column)*255);//QQ: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
+  columns->number = 0;
   while(w > 0){ 
-	if ((read(s, &type, sizeof(type))) <= 0) { w = -1; break;}//QC: the logic on the while loop is flawed?
-	//printf("value of w at type: %i\n", w);
-	w= read(s, &width, sizeof(width)); //QC: is our read correct?
-	//printf("value of w at width: %i\n", w);
-	w= read(s, &name_length, sizeof(name_length));
-	//printf("value of w at name_length: %i\n", w);
+	if ((read(s, &type, sizeof(type))) <= 0){
+		w = -1;
+		//QQ:What if its the first read and theres nothing?
+		break;
+		}
+	w = read(s, &width, sizeof(width));
+	w = read(s, &name_length, sizeof(name_length));
+
 	name = my_malloc(name_length+1);
-	w= read(s, name, name_length);
-	//printf("value of w at name: %i\n", w);
+	w = read(s, name, name_length);
 	name[name_length] = '\0';
-	//printf("type: %i width: %i name_length: %i n: %s\n",type,width,name_length,name);
-	//printf("1We got this far\n");
-	columns->number = 4; //Q how do we find out the columns number?
-	
-	//printf("2We got this far\n");
-	
-	columns->declarations[c].type = type; //QC: is the assignment right?
-	//printf("3We got this far\n");
-	columns->declarations[c].width = width;
-	//printf("4We got this far name: %s\n",name);
-	columns->declarations[c].name = name; //Q: we had segmentation fault/coredump?
-	//printf("\nc: %i\n",c);
-	c++;
-}
-	//printf("c: %i\n",c);
 
-
- 
-  
+	columns->declarations[count].type = type; 
+	columns->declarations[count].width = width;
+	columns->declarations[count].name = name; 
+	count++;
+	columns->number = (columns->number + 1); 
+	}  
+  close(s);
   return true;
 }
 
@@ -169,46 +159,38 @@ bool sudba_create_database(char *table, Columns columns) {
 bool sudba_insert_into_database(char *table, Values values)
 {
   sudba_lock(table);
+  bool first_report = false;
   bool status = true;
-
   // 1. Check if the table already exists. If it does, report error 412
   if(sudba_exists(table)){
-	fprintf(stdout, HTTP_VER " 412 Precondition Failed");
+	fprintf(stdout, HTTP_VER " 412 Precondition Failed\n");
 	status = false;
-}
+	first_report = true;
+  }
   // 2. Read the table schema from the .frm file
   // If the function fails, report error 500
   Columns columns;
-  
+
   status = read_schema(table, &columns);
+  //my_realloc(&columns, sizeof(Column)*(columns.number+1)+sizeof(Columns)); //QQ: how?
+
   if(status == false){
-	fprintf(stdout, HTTP_VER " 500 Internal Server Error");
-}
-
-	if(status == true){
-
-  for (int i = 0; i< columns.number; i++ ) {
-	  printf("INSERT INTO DATABASE: type: %i width: %i name: %s\n",columns.declarations[i].type, 	  columns.declarations[i].width,columns.declarations[i].name);
-	}///for debugging.
-
- for (int i = 0; i < values.number; i++ ) {
-	  printf("VALUE %i TYPE : %i\n",i,values.values[i].type); //QC: is our understanding of value[i] right?
-	  if (values.values[i].type != columns.declarations[i].type) {
-			fprintf(stdout, HTTP_VER " 400 Invalid Request %s\n\r", table); //Q: Offender?
-			status = false; 
-			printf("\n\n");
-			break;
-		}
+	if(first_report == false) { //QQ: Why can't we do &&
+		fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
 	}
   }
-//printf("INSERT INTO DATABASE: name: %s age: %i gender:  gpa: %f\n", values.values[0].value.string_val,values.values[1].value.int_val, values.values[3].value.float_val);
-
- 
 
   // 3. Compare the passed values to the columns. The number and types must match
   // If they do not, report error 400
-  if(status == true) { //Q: what 
-	
+  else{
+	  for (int i = 0; i < values.number; i++ ) {
+		  if (values.values[i].type != columns.declarations[i].type) {
+				fprintf(stdout, HTTP_VER " 400 Invalid Request %s\n\r", table);
+				status = false; 
+				break;
+			}
+		}
+  }
   // 4. Append the values, in the binary form, at the end of the .MYD file
   // without separators or terminators.
   //    Strings shall be written as left-justified, 0-padded character arrays
@@ -218,10 +200,60 @@ bool sudba_insert_into_database(char *table, Values values)
   //    "Hello\0\0\0\0\0" (six zeros, including the trailing terminator!).
   //    The same string shall be written into column char(2) as "He" (trimmed).
   // If writing fails, report error 500
-  
+  if (status == true){
+	for (int i = 0; i < values.number; i++){
+		char data[strlen(table) + sizeof(DB_DATA_EXT)];
+    		sprintf(data, "%s" DB_DATA_EXT, table);
+		int o = open(data, O_WRONLY|O_APPEND);
+		if (o == -1){
+			status = false;
+			close(o);
+			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");//QQ: right error?
+		}
+		else{//
+			char temp[columns.declarations[i].width+1];
+			memset(temp,'\0',columns.declarations[i].width+1);
+			switch((int)values.values[i].type) {////
+				case(0) :
+					if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
+						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						status = false; 
+						}
+					break;
+				case(1) :
+					if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
+						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						status = false;
+						}
+					break;
+				case(2) :
+					for (int j = 0; j < strlen(values.values[i].value.string_val); j++){
+						if (j == columns.declarations[i].width){
+							break;
+						}
+						else{
+							temp[j] = values.values[i].value.string_val[j];
+						}
+					}
+					printf("\n\nDEBUGGING:");
+					for (int j = 0; j<sizeof(temp);j++){
+						printf("TEMP[%i] = %c ",j,temp[j]);
+						} printf("\n\n");//debugging
+					if (write(o, temp, sizeof(temp)) < 0){
+						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						status = false;
+					}
+					break;
+					//default?			
+				}////
+		}//
+		close(o);
+	}
+  }
   // Report success 200
-  fprintf(stdout, HTTP_VER " 200 Inserted into %s\n\r", table);
- }
+  if(status == true){ //Q: what 
+  	fprintf(stdout, HTTP_VER " 200 Inserted into %s\n\r", table);
+  }
   sudba_unlock(table);
   // Free strings
   for(int i = 0; i < values.number; i++ )
