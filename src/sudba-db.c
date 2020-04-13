@@ -49,28 +49,26 @@ static bool read_schema (char *table, Columns *columns) {
   short name_length;
   char *name;
   int w = 1;
-  int count = 0;
-  columns->declarations = my_malloc(sizeof(Column)*255);//QQ: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
+  columns->declarations = NULL;//QQ: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
   columns->number = 0;
   while(w > 0){ 
 	if ((read(s, &type, sizeof(type))) <= 0){
-		w = -1;
-		//QQ:What if its the first read and theres nothing?
+		//QQQ: return  false better than break?
 		break;
 		}
+	columns->declarations = my_realloc(columns->declarations,(columns->number+1)*sizeof(Column));
 	w = read(s, &width, sizeof(width));
 	w = read(s, &name_length, sizeof(name_length));
-
+	//QQQ: what if read fails somewhere here?
 	name = my_malloc(name_length+1);
 	w = read(s, name, name_length);
 	name[name_length] = '\0';
-
-	columns->declarations[count].type = type; 
-	columns->declarations[count].width = width;
-	columns->declarations[count].name = name; 
-	count++;
+	columns->declarations[columns->number].type = type; 
+	columns->declarations[columns->number].width = width;
+	columns->declarations[columns->number].name = name; 
 	columns->number = (columns->number + 1); 
 	}  
+  
   close(s);
   return true;
 }
@@ -159,30 +157,25 @@ bool sudba_create_database(char *table, Columns columns) {
 bool sudba_insert_into_database(char *table, Values values)
 {
   sudba_lock(table);
-  bool first_report = false;
   bool status = true;
-  // 1. Check if the table already exists. If it does, report error 412
-  if(sudba_exists(table)){
+  // 1. Check if the table already exists. If it does not exist, report error 412
+  if(!sudba_exists(table)){
 	fprintf(stdout, HTTP_VER " 412 Precondition Failed\n");
 	status = false;
-	first_report = true;
   }
   // 2. Read the table schema from the .frm file
   // If the function fails, report error 500
   Columns columns;
-
-  status = read_schema(table, &columns);
-  //my_realloc(&columns, sizeof(Column)*(columns.number+1)+sizeof(Columns)); //QQ: how?
-
-  if(status == false){
-	if(first_report == false) { //QQ: Why can't we do &&
-		fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
-	}
+  if(status == true){
+	status = read_schema(table, &columns);
+		if (status == false){
+			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
+		}
   }
 
   // 3. Compare the passed values to the columns. The number and types must match
   // If they do not, report error 400
-  else{
+  if (status == true){
 	  for (int i = 0; i < values.number; i++ ) {
 		  if (values.values[i].type != columns.declarations[i].type) {
 				fprintf(stdout, HTTP_VER " 400 Invalid Request %s\n\r", table);
@@ -207,47 +200,52 @@ bool sudba_insert_into_database(char *table, Values values)
 		int o = open(data, O_WRONLY|O_APPEND);
 		if (o == -1){
 			status = false;
-			close(o);
 			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");//QQ: right error?
+			break;//QQQ: break?
 		}
 		else{//
-			char temp[columns.declarations[i].width+1];
-			memset(temp,'\0',columns.declarations[i].width+1);
-			switch((int)values.values[i].type) {////
-				case(0) :
+			switch(values.values[i].type) {////
+				case(COL_INT) :
 					if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
 						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
 						status = false; 
 						}
+					else { //debugging
+						printf("int_val = %i\n", values.values[i].value.int_val);
+					}
 					break;
-				case(1) :
+				case(COL_FLOAT) :
 					if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
 						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
 						status = false;
 						}
-					break;
-				case(2) :
-					for (int j = 0; j < strlen(values.values[i].value.string_val); j++){
-						if (j == columns.declarations[i].width){
-							break;
-						}
-						else{
-							temp[j] = values.values[i].value.string_val[j];
-						}
+					else { //debugging
+						printf("float_val = %f\n", values.values[i].value.float_val);
 					}
+					break;
+				case(COL_STR) : {
+					char temp[columns.declarations[i].width+1];
+					memset(temp,'\0',columns.declarations[i].width+1);
+					strncpy(temp,values.values[i].value.string_val,columns.declarations[i].width);
 					printf("\n\nDEBUGGING:");
 					for (int j = 0; j<sizeof(temp);j++){
-						printf("TEMP[%i] = %c ",j,temp[j]);
+						if (temp[j] == '\0'){
+							printf("temp[%i] = null!\n",j);
+						}
+						else{
+							printf("temp[%i] = %c \n",j,temp[j]);
+						}
 						} printf("\n\n");//debugging
 					if (write(o, temp, sizeof(temp)) < 0){
 						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
 						status = false;
 					}
 					break;
-					//default?			
+				}			
 				}////
+				close(o);
 		}//
-		close(o);
+		
 	}
   }
   // Report success 200
