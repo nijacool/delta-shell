@@ -41,7 +41,7 @@ static bool read_schema (char *table, Columns *columns) {
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
   int s = open(schema, O_RDONLY);
   if (s == -1) { 
-	close(s);
+	//close(s); //QQQ: do you close it? since you didn't even open successfully?
 	return false;
   } 
   int type;
@@ -49,11 +49,11 @@ static bool read_schema (char *table, Columns *columns) {
   short name_length;
   char *name;
   int w = 1;
-  columns->declarations = NULL;//QQ: should this even be here? QC: this is supposed to be intialized in insert_into?? and malloc(sizeof(Column)*n)? how do we find out what "4" would be?
+  columns->declarations = NULL;
   columns->number = 0;
   while(w > 0){ 
 	if ((read(s, &type, sizeof(type))) <= 0){
-		//QQQ: return  false better than break?
+		//QQQ: return false better than break?
 		break;
 		}
 	columns->declarations = my_realloc(columns->declarations,(columns->number+1)*sizeof(Column));
@@ -227,7 +227,7 @@ bool sudba_insert_into_database(char *table, Values values)
 					char temp[columns.declarations[i].width+1];
 					memset(temp,'\0',columns.declarations[i].width+1);
 					strncpy(temp,values.values[i].value.string_val,columns.declarations[i].width);
-					printf("\n\nDEBUGGING:");
+					printf("\n\nDEBUGGING:\n");
 					for (int j = 0; j<sizeof(temp);j++){
 						if (temp[j] == '\0'){
 							printf("temp[%i] = null!\n",j);
@@ -249,7 +249,7 @@ bool sudba_insert_into_database(char *table, Values values)
 	}
   }
   // Report success 200
-  if(status == true){ //Q: what 
+  if(status == true){  
   	fprintf(stdout, HTTP_VER " 200 Inserted into %s\n\r", table);
   }
   sudba_unlock(table);
