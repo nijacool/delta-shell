@@ -41,7 +41,6 @@ static bool read_schema (char *table, Columns *columns) {
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
   int s = open(schema, O_RDONLY);
   if (s == -1) { 
-	//close(s); //QQQ: do you close it? since you didn't even open successfully?
 	return false;
   } 
   int type;
@@ -52,14 +51,12 @@ static bool read_schema (char *table, Columns *columns) {
   columns->declarations = NULL;
   columns->number = 0;
   while(w > 0){ 
-	if ((read(s, &type, sizeof(type))) <= 0){
-		//QQQ: return false better than break?
-		break;
+	if ((read(s, &type, sizeof(type))) <= 0){ 
+		break; //FLEX will handle catches
 		}
 	columns->declarations = my_realloc(columns->declarations,(columns->number+1)*sizeof(Column));
 	w = read(s, &width, sizeof(width));
 	w = read(s, &name_length, sizeof(name_length));
-	//QQQ: what if read fails somewhere here?
 	name = my_malloc(name_length+1);
 	w = read(s, name, name_length);
 	name[name_length] = '\0';
@@ -169,7 +166,7 @@ bool sudba_insert_into_database(char *table, Values values)
   if(status == true){
 	status = read_schema(table, &columns);
 		if (status == false){
-			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
+			fprintf(stdout, HTTP_VER " read_schema 500 Internal Server Error\n");
 		}
   }
 
@@ -193,21 +190,23 @@ bool sudba_insert_into_database(char *table, Values values)
   //    "Hello\0\0\0\0\0" (six zeros, including the trailing terminator!).
   //    The same string shall be written into column char(2) as "He" (trimmed).
   // If writing fails, report error 500
+
   if (status == true){
+  	char data[strlen(table) + sizeof(DB_DATA_EXT)];
+  	sprintf(data, "%s" DB_DATA_EXT, table);
+  	int o = open(data, O_WRONLY|O_APPEND);
 	for (int i = 0; i < values.number; i++){
-		char data[strlen(table) + sizeof(DB_DATA_EXT)];
-    		sprintf(data, "%s" DB_DATA_EXT, table);
-		int o = open(data, O_WRONLY|O_APPEND);
 		if (o == -1){
 			status = false;
-			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");//QQ: right error?
+			fprintf(stdout, HTTP_VER " Test 500 Internal Server Error\n");//QQ: right error?
 			break;//QQQ: break?
 		}
 		else{//
+
 			switch(values.values[i].type) {////
 				case(COL_INT) :
 					if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
-						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						fprintf(stdout, HTTP_VER " int 500 Internal Server Error\n"); 
 						status = false; 
 						}
 					else { //debugging
@@ -216,7 +215,7 @@ bool sudba_insert_into_database(char *table, Values values)
 					break;
 				case(COL_FLOAT) :
 					if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
-						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						fprintf(stdout, HTTP_VER " float 500 Internal Server Error\n"); 
 						status = false;
 						}
 					else { //debugging
@@ -237,16 +236,16 @@ bool sudba_insert_into_database(char *table, Values values)
 						}
 						} printf("\n\n");//debugging
 					if (write(o, temp, sizeof(temp)) < 0){
-						fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+						fprintf(stdout, HTTP_VER " str 500 Internal Server Error\n"); 
 						status = false;
 					}
 					break;
 				}			
 				}////
-				close(o);
+				
 		}//
 		
-	}
+	} close(o);
   }
   // Report success 200
   if(status == true){  
