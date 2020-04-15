@@ -52,7 +52,7 @@ static bool read_schema (char *table, Columns *columns) {
   columns->number = 0;
   while(w > 0){ 
 	if ((read(s, &type, sizeof(type))) <= 0){ 
-		break; //FLEX will handle catches
+		break; 
 		}
 	columns->declarations = my_realloc(columns->declarations,(columns->number+1)*sizeof(Column));
 	w = read(s, &width, sizeof(width));
@@ -65,7 +65,6 @@ static bool read_schema (char *table, Columns *columns) {
 	columns->declarations[columns->number].name = name; 
 	columns->number = (columns->number + 1); 
 	}  
-  
   close(s);
   return true;
 }
@@ -166,7 +165,7 @@ bool sudba_insert_into_database(char *table, Values values)
   if(status == true){
 	status = read_schema(table, &columns);
 		if (status == false){
-			fprintf(stdout, HTTP_VER " read_schema 500 Internal Server Error\n");
+			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
 		}
   }
 
@@ -191,61 +190,44 @@ bool sudba_insert_into_database(char *table, Values values)
   //    The same string shall be written into column char(2) as "He" (trimmed).
   // If writing fails, report error 500
 
-  if (status == true){
+  if (status == true){ 
   	char data[strlen(table) + sizeof(DB_DATA_EXT)];
   	sprintf(data, "%s" DB_DATA_EXT, table);
   	int o = open(data, O_WRONLY|O_APPEND);
-	for (int i = 0; i < values.number; i++){
-		if (o == -1){
-			status = false;
-			fprintf(stdout, HTTP_VER " Test 500 Internal Server Error\n");//QQ: right error?
-			break;//QQQ: break?
-		}
-		else{//
-
-			switch(values.values[i].type) {////
-				case(COL_INT) :
-					if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
-						fprintf(stdout, HTTP_VER " int 500 Internal Server Error\n"); 
-						status = false; 
-						}
-					else { //debugging
-						printf("int_val = %i\n", values.values[i].value.int_val);
+	if (o == -1){
+		status = false;
+		fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
+	}
+	else {
+		for (int i = 0; i < values.number; i++) {
+				switch(values.values[i].type) {
+					case(COL_INT) :
+						if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
+							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+							status = false; 
+							}
+						break;
+					case(COL_FLOAT) :
+						if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
+							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+							status = false;
+							}
+						break;
+					case(COL_STR) : {
+						char temp[columns.declarations[i].width+1];
+						memset(temp,'\0',columns.declarations[i].width+1);
+						strncpy(temp,values.values[i].value.string_val,columns.declarations[i].width);
+						if (write(o, temp, sizeof(temp)) < 0){
+							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
+							status = false;
+							}
+						break;
+						}			
 					}
-					break;
-				case(COL_FLOAT) :
-					if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
-						fprintf(stdout, HTTP_VER " float 500 Internal Server Error\n"); 
-						status = false;
-						}
-					else { //debugging
-						printf("float_val = %f\n", values.values[i].value.float_val);
-					}
-					break;
-				case(COL_STR) : {
-					char temp[columns.declarations[i].width+1];
-					memset(temp,'\0',columns.declarations[i].width+1);
-					strncpy(temp,values.values[i].value.string_val,columns.declarations[i].width);
-					printf("\n\nDEBUGGING:\n");
-					for (int j = 0; j<sizeof(temp);j++){
-						if (temp[j] == '\0'){
-							printf("temp[%i] = null!\n",j);
-						}
-						else{
-							printf("temp[%i] = %c \n",j,temp[j]);
-						}
-						} printf("\n\n");//debugging
-					if (write(o, temp, sizeof(temp)) < 0){
-						fprintf(stdout, HTTP_VER " str 500 Internal Server Error\n"); 
-						status = false;
-					}
-					break;
-				}			
-				}////
-				
-		}//
-		
-	} close(o);
+				} 
+	close(o);
+	}
+	
   }
   // Report success 200
   if(status == true){  
