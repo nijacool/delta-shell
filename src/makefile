@@ -9,13 +9,13 @@ CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
 	-Wmissing-include-dirs -Wredundant-decls -Wshadow \
 	-Wstrict-overflow=5 -Wundef -Werror -Wno-unused \
-	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-sign-compare
+	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-sign-compare -pthread
 
 all: $(TARGET)
 
 # Uncomment the end of the rule for memory debugging
 sudba: $(OBJS) 
-	$(CC) $(OBJS) -o $(TARGET) #-lefence 
+	$(CC) $(OBJS) -o $(TARGET) -pthread #-lefence 
 
 susql-scanner.c: susql.l susql-parser.h
 	$(LEX) -o susql-scanner.c susql.l
@@ -34,7 +34,3 @@ susql-scanner.o: susql-scanner.c susql-parser.h $(INCLUDE)/sudba.h
 # Remove everything that can be rebuilt
 clean:
 	rm -f $(OBJS) $(TARGET) susql-scanner.c susql-parser.h susql-parser.c
-
-test: $(TARGET) test.sql
-	@mkdir $(WD) || echo "But it's ok!"
-	@cat test.sql | ./$(TARGET) 8888

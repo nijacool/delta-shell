@@ -1,6 +1,6 @@
 %define api.pure full
 %locations
-%param { yyscan_t scanner }
+%param { yyscan_t scanner } { FILE* yyoutfile }
 
 %code top {
 #include <stdio.h>
@@ -16,16 +16,19 @@
  }
 
 %code {
-  int yylex(YYSTYPE* yylvalp, YYLTYPE* yyllocp, yyscan_t scanner);
-  void yyerror(YYLTYPE* yyllocp, yyscan_t unused, const char* msg);
+  int yylex(YYSTYPE* yylvalp, YYLTYPE* yyllocp, yyscan_t scanner, FILE* yyoutfile);
+  void yyerror(YYLTYPE* yyllocp, yyscan_t unused, FILE* yyoutfile, const char* msg);
  }
 
 %union{
   int i;
   float f;
   char *s;
+  Tables tables;
   Column column;
   Columns columns;
+  QualifiedColumn qcolumn;
+  QualifiedColumns qcolumns;
   Value value;
   Values values;
   }
@@ -60,27 +63,29 @@
 %type <columns> spec-list
 %type <value> value
 %type <values> valist
+%type <tables> tables
+%type <qcolumn> column
+%type <qcolumns> column-list
 
 %start script
 
 %%
 
 script:
-  query ';'
-| script query ';'
+  query ';' { YYACCEPT; }
 
 query:
   create-query 
 | drop-query   
 | insert-query
-| select-query { fputs("200 selected\n", stderr); }
-| update-query { fputs("200 updated\n", stderr); }
-| delete-query { fputs("200 deleted\n", stderr); }
+| select-query 
+| update-query { sudba_not_implemented(yyoutfile); }
+| delete-query { sudba_not_implemented(yyoutfile); }
 ;
 
 create-query:
   YY_CREATE YY_TABLE YY_ID '(' spec-list ')' {
-    sudba_create_database($3, $5);
+    sudba_create_database($3, $5, yyoutfile);
   };
 
 spec-list: /* a comma-separated list of column declarations */
@@ -108,12 +113,12 @@ type: /* on of the three supported datatypes */
 ;
 
 drop-query:
-  YY_DROP YY_TABLE YY_ID { sudba_drop_database($3); }
+YY_DROP YY_TABLE YY_ID { sudba_drop_database($3, yyoutfile); }
 ;
 
 insert-query:
   YY_INSERT YY_INTO YY_ID YY_VALUES '(' valist ')' {
-    sudba_insert_into_database($3, $6);
+    sudba_insert_into_database($3, $6, yyoutfile);
   }
 ;
 
@@ -138,24 +143,38 @@ value:
 | YY_STRING   { $$.type = COL_STR;   $$.value.string_val = $1; }
 ;
 
-select-query: /* TODO */
-  YY_SELECT column-list YY_FROM tables where-clause
+select-query: 
+  YY_SELECT column-list YY_FROM tables where-clause {
+    sudba_select($2, $4, NULL, yyoutfile);
+}
 ;
 
 column-list:
-  column
-| column-list ',' column
+  column {
+    $$.number = 1;
+    $$.values = my_malloc(sizeof(QualifiedColumn)); $$.values[0] = $1; }
+| column-list ',' column {
+    $$.number++;
+    $$.values = my_realloc($$.values, sizeof(QualifiedColumn) * $$.number);
+    $$.values[$$.number - 1] = $3; 
+  }
 ;
 
 column:
-YY_ID { free($1); /* temp measure */ }
-| YY_ID '.' YY_ID { free($1); free($3); /* temp measure */ }
-| '*'
+YY_ID { $$.table = NULL; $$.column = $1; }
+| YY_ID '.' YY_ID { $$.table = $1; $$.column = $3; }
+| '*' { $$.table = NULL; $$.column = NULL; }
 ;
 
 tables :
-  YY_ID { free($1); /* temp measure */ }
-| tables ',' YY_ID { free($3); /* temp measure */ }
+YY_ID {
+  $$.number = 1;
+  $$.values = my_malloc(sizeof(char*));
+  $$.values[0] = $1; }
+| tables ',' YY_ID {
+  $$.number++;
+  $$.values = my_realloc($$.values, sizeof(char*) * $$.number);
+  $$.values[$$.number - 1] = $3; }
 ;
 
 where-clause:

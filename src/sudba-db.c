@@ -7,12 +7,12 @@
 #include <fcntl.h>
 #include "sudba.h"
 
-bool sudba_drop_database(char *table) {
+bool sudba_drop_database(char *table, FILE* response) {
   sudba_lock(table);
 
   bool status = true;
   if (!sudba_exists(table)) {
-    fprintf(stdout, HTTP_VER " 404 Not Found %s\n\r", table);
+    fprintf(response, HTTP_VER " 404 Not Found %s\n\r", table);
     status = false;
   } else {  
     char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)];
@@ -21,10 +21,10 @@ bool sudba_drop_database(char *table) {
     sprintf(data  , "%s" DB_DATA_EXT  , table);
     
     if (unlink(schema) || unlink(data)) {
-      fprintf(stdout, HTTP_VER " 500 Could Not Drop %s\n\r", table); 
+      fprintf(response, HTTP_VER " 500 Could Not Drop %s\n\r", table); 
       status = false;
     } else
-      fprintf(stdout, HTTP_VER " 200 Deleted %s\n\r", table); 
+      fprintf(response, HTTP_VER " 200 Deleted %s\n\r", table); 
   }
   
   sudba_unlock(table);
@@ -36,36 +36,52 @@ bool sudba_drop_database(char *table) {
 /*
   Read SuSQL schema for the table.
 */
-static bool read_schema (char *table, Columns *columns) { 
+static bool read_schema (char *table, Columns *columns) {
   char schema[strlen(table) + sizeof(DB_SCHEMA_EXT)];
   sprintf(schema, "%s" DB_SCHEMA_EXT, table);
-  int s = open(schema, O_RDONLY);
-  if (s == -1) { 
-	return false;
-  } 
-  int type;
-  short width;
-  short name_length;
-  char *name;
-  int w = 1;
+
+  // Open the .frm file for reading
+  int schema_file = open(schema, O_RDONLY);
+  if (schema_file < 0) {
+    return false;
+  }
+
+  // Initialize the schema
+  int count = 0;
   columns->declarations = NULL;
-  columns->number = 0;
-  while(w > 0){ 
-	if ((read(s, &type, sizeof(type))) <= 0){ 
-		break; 
-		}
-	columns->declarations = my_realloc(columns->declarations,(columns->number+1)*sizeof(Column));
-	w = read(s, &width, sizeof(width));
-	w = read(s, &name_length, sizeof(name_length));
-	name = my_malloc(name_length+1);
-	w = read(s, name, name_length);
-	name[name_length] = '\0';
-	columns->declarations[columns->number].type = type; 
-	columns->declarations[columns->number].width = width;
-	columns->declarations[columns->number].name = name; 
-	columns->number = (columns->number + 1); 
-	}  
-  close(s);
+  
+  // Read the schema from the file
+  int type;
+  while (sizeof type == read(schema_file, &type, sizeof type)) {
+    columns->declarations = my_realloc(columns->declarations,
+				       (count + 1) * sizeof(Column));
+    columns->declarations[count].type = type;
+    short name_length;    
+    if (-1 == read(schema_file, &columns->declarations[count].width,
+		   sizeof columns->declarations[count].width) ||
+	-1 == read(schema_file, &name_length, sizeof name_length)) {
+      // Roll back
+      for (int i = 0; i < count; i++)
+	free(columns->declarations[i].name);
+      free(columns->declarations);
+      close(schema_file);
+      return false;
+    }
+    columns->declarations[count].name = my_malloc(name_length + 1);
+    if (-1 == read(schema_file, columns->declarations[count].name,
+			    name_length)) {
+      // Roll back
+      for (int i = 0; i <= count; i++)
+	free(columns->declarations[i].name);
+      free(columns->declarations);
+      close(schema_file);
+     return false;
+    }
+    columns->declarations[count].name[name_length] = 0;
+    count++;
+  }
+  columns->number = count;
+  
   return true;
 }
 
@@ -99,12 +115,13 @@ static bool write_schema (char *table, Columns columns) {
   return -1 != close(schema_file);
 }
   
-bool sudba_create_database(char *table, Columns columns) {
+bool sudba_create_database(char *table, Columns columns, FILE* response) {
   sudba_lock(table);
   bool status = true;
 
   // Check if the table already exists. If it does, report error 412
   if (sudba_exists(table)) {
+    fprintf(response, HTTP_VER " 412 Duplicated %s\n\r", table); 
     status = false;
   } else {
     // Check if all column names are distinct. If not, report error 412
@@ -114,11 +131,11 @@ bool sudba_create_database(char *table, Columns columns) {
 	  status = false;
 	  break;
 	}
+    if (!status)
+      fprintf(response, HTTP_VER " 400 Bad Request\n\r");
   }
 
-  if (!status)
-    fprintf(stdout, HTTP_VER " 412 Duplicate\n\r");
-  else {
+  if (status) {
     char data[strlen(table) + sizeof(DB_DATA_EXT)];
     sprintf(data, "%s" DB_DATA_EXT, table);
 
@@ -133,10 +150,10 @@ bool sudba_create_database(char *table, Columns columns) {
     if (!status) {
       // If failed, delete the .MYD file, report error 500
       unlink(data);
-      fprintf(stdout, HTTP_VER " 500 Internal Server Error %s\n\r", table);
+      fprintf(response, HTTP_VER " 500 Internal Server Error %s\n\r", table);
     } else
       // Report success 201
-      fprintf(stdout, HTTP_VER " 201 Created %s\n\r", table);
+      fprintf(response, HTTP_VER " 201 Created %s\n\r", table);
   }
   
   sudba_unlock(table);
@@ -150,89 +167,109 @@ bool sudba_create_database(char *table, Columns columns) {
   return status;
 }
 
-bool sudba_insert_into_database(char *table, Values values)
+// Helper function for writing data into an existing table
+static bool write_data(char *table, Values values, Columns columns)
 {
-  sudba_lock(table);
-  bool status = true;
-  // 1. Check if the table already exists. If it does not exist, report error 412
-  if(!sudba_exists(table)){
-	fprintf(stdout, HTTP_VER " 412 Precondition Failed\n");
-	status = false;
-  }
-  // 2. Read the table schema from the .frm file
-  // If the function fails, report error 500
-  Columns columns;
-  if(status == true){
-	status = read_schema(table, &columns);
-		if (status == false){
-			fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
-		}
-  }
-
-  // 3. Compare the passed values to the columns. The number and types must match
-  // If they do not, report error 400
-  if (status == true){
-	  for (int i = 0; i < values.number; i++ ) {
-		  if (values.values[i].type != columns.declarations[i].type) {
-				fprintf(stdout, HTTP_VER " 400 Invalid Request %s\n\r", table);
-				status = false; 
-				break;
-			}
-		}
-  }
   // 4. Append the values, in the binary form, at the end of the .MYD file
   // without separators or terminators.
-  //    Strings shall be written as left-justified, 0-padded character arrays
-  //    of the length "width+1", as specified in the column definitions, trimmed
-  //    if needed.
-  //    For example, string "Hello" shall be written into column char(10) as
-  //    "Hello\0\0\0\0\0" (six zeros, including the trailing terminator!).
-  //    The same string shall be written into column char(2) as "He" (trimmed).
+  char data[strlen(table) + sizeof(DB_DATA_EXT)];
+  sprintf(data, "%s" DB_DATA_EXT, table);
+  
+  // Open the .MYD file for appending
+  int data_file = open(data, O_WRONLY | O_APPEND);
+  if (data_file < 0)
+    return false;
+  
+  for(int i = 0; i < values.number; i++ ) {
+    Value val = values.values[i];
+    void *ptr = NULL;
+    size_t count = 0;
+    
+    // Prepare for writing
+    switch(val.type) {
+    case COL_INT:
+      ptr = &val.value.int_val;
+      count = sizeof(int);
+      break;
+    case COL_FLOAT:
+      ptr = &val.value.float_val;
+      count = sizeof(float);
+      break;
+    case COL_STR:
+      {
+//    Strings shall be written as left-justified, 0-padded character arrays
+//    of the length "width+1", as specified in the column definitions, trimmed
+//    if needed.
+//    For example, string "Hello" shall be written into column char(10) as
+//    "Hello\0\0\0\0\0" (six zeros, including the trailing terminator!).
+//    The same string shall be written into column char(2) as "He" (trimmed).
+	char col[columns.declarations[i].width + 1];
+	bzero(col, sizeof(col));
+	memcpy(col, val.value.string_val, sizeof(col) - 1);
+	ptr = col;
+	count = sizeof(col);
+      }
+      break;
+    }
+    
+    // Attempt to write
+    if(count != write(data_file, ptr, count)) {
+      close(data_file);
+      return false;
+    }
+  }
+    
   // If writing fails, report error 500
+  if (-1 == close(data_file))
+    return false;
 
-  if (status == true){ 
-  	char data[strlen(table) + sizeof(DB_DATA_EXT)];
-  	sprintf(data, "%s" DB_DATA_EXT, table);
-  	int o = open(data, O_WRONLY|O_APPEND);
-	if (o == -1){
-		status = false;
-		fprintf(stdout, HTTP_VER " 500 Internal Server Error\n");
-	}
-	else {
-		for (int i = 0; i < values.number; i++) {
-				switch(values.values[i].type) {
-					case(COL_INT) :
-						if (write(o, &values.values[i].value.int_val, sizeof(values.values[i].value.int_val)) < 0){ 
-							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
-							status = false; 
-							}
-						break;
-					case(COL_FLOAT) :
-						if (write(o, &values.values[i].value.float_val, sizeof(values.values[i].value.float_val)) < 0){
-							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
-							status = false;
-							}
-						break;
-					case(COL_STR) : {
-						char temp[columns.declarations[i].width+1];
-						memset(temp,'\0',columns.declarations[i].width+1);
-						strncpy(temp,values.values[i].value.string_val,columns.declarations[i].width);
-						if (write(o, temp, sizeof(temp)) < 0){
-							fprintf(stdout, HTTP_VER " 500 Internal Server Error\n"); 
-							status = false;
-							}
-						break;
-						}			
-					}
-				} 
-	close(o);
-	}
-	
+  return true;
+}
+
+bool sudba_insert_into_database(char *table, Values values, FILE* response)
+{
+  bool status = true;
+  sudba_lock(table);
+
+  // 1. Check if the table already exists. If it does, report error 412
+  if (!sudba_exists(table)) {
+    fprintf(response, HTTP_VER " 404 Not Found %s\n\r", table);
+    status = false;
   }
-  // Report success 200
-  if(status == true){  
-  	fprintf(stdout, HTTP_VER " 200 Inserted into %s\n\r", table);
+
+  Columns columns;
+  if(status) {
+    // 2. Read the table schema from the .frm file
+    // If the function fails, report error 500
+    status = read_schema (table, &columns);
   }
+
+  if (status) {
+    // 3. Compare the passed values to the columns.
+    // The number and types must match    
+    if (columns.number != values.number)
+      status = false;
+    else
+      for(int i = 0; i < values.number; i++) {
+	if (values.values[i].type != columns.declarations[i].type) {
+	  status = false;
+	  break;
+	}      
+      }
+    if (!status)
+      // If they do not, report error 400
+      fprintf(response, HTTP_VER " 400 Bad Request\n\r");
+  }
+
+  if (status) {
+    if (write_data(table, values, columns))
+      // Report success 200
+      fprintf(response, HTTP_VER " 200 Inserted into %s\n\r", table);
+    else
+      fprintf(response, HTTP_VER " 500 Internal server error\n\r");
+  }
+  
+  // Cleanup
   sudba_unlock(table);
   // Free strings
   for(int i = 0; i < values.number; i++ )
@@ -243,4 +280,38 @@ bool sudba_insert_into_database(char *table, Values values)
   // Free table name
   free(table);
   return status;
+}
+
+bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* response)
+{
+  bool status = true;
+
+  // Much locking needed
+  for(int i = 0; i < tables.number; i++)
+    sudba_lock(tables.values[i]);
+  
+  // Will impement only for tables.number == 1
+  // And qcolumns.number == 1
+  // And qcolumns.values[0].table == NULL
+  // And qcolumns.values[0].column == NULL
+
+  //---------------------------------------------------
+  // Your code goes here
+  //---------------------------------------------------
+  
+  // Cleanup
+  for(int i = 0; i < tables.number; i++)
+    sudba_unlock(tables.values[i]);
+
+  for(int i = 0; i < qcolumns.number; i++){
+    free(qcolumns.values[i].table);
+    free(qcolumns.values[i].column);
+  }
+  
+  for(int i = 0; i < tables.number; i++)
+    free(tables.values[i]);
+  
+  free(qcolumns.values);
+  free(tables.values);
+  return true;  
 }

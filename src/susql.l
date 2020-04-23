@@ -2,6 +2,11 @@
   /* This section is included into the output file verbatim */
   #include "sudba.h"
   #include "susql-parser.h"
+#undef YY_INPUT
+#define YY_INPUT(buffer, bytes_read, max_bytes) do {\
+    bytes_read = read(yyget_extra(yyscanner), buffer, max_bytes);	\
+  } while(0)
+
 %}
 
 /* May flex options that make the code thread-safe */
@@ -55,13 +60,19 @@ string        \"([^\n\\\"]|\\.)*\"
 %%
 
 /* Parser driver */
-int sudba_parse(int socket /* unused */)
+int sudba_parse(int newsockfd)
 {
-  socket = 0; // Keep the compiler happy; will fix later
-  yyscan_t scanner;  
+  yyscan_t scanner;          
   yylex_init(&scanner);
-  int status = yyparse(scanner);
+  yylex_init_extra(newsockfd, &scanner);
+  FILE* reverse_socket = fdopen(dup(newsockfd), "w");
+  setlinebuf(reverse_socket);
+  yyset_out(reverse_socket, scanner);
+  int status = yyparse(scanner, reverse_socket);
+
   yylex_destroy(scanner);
-  
+  fclose(reverse_socket);
+  close(newsockfd);  
+
   return status;
 }
