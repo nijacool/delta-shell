@@ -284,11 +284,37 @@ bool sudba_insert_into_database(char *table, Values values, FILE* response)
 
 bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* response)
 {
+  printf("\n"); //DEBUGGING
   bool status = true;
 
   // Much locking needed!
-  for(int i = 0; i < tables.number; i++)
+  for(int i = 0; i < tables.number; i++) {
     sudba_lock(tables.values[i]);
+    printf("DEBUGGING tables.values[%i]: ", i); //DEBUGGING
+    puts(tables.values[i]); //DEBUGGING
+    printf("\n");
+  }
+  for (int j = 0; j < qcolumns.number; j++) { //DEBUGGING
+	if (qcolumns.values[j].column == NULL) { 
+		printf("DEBUGGING qcolumns.values[%i].column: NULL\n", j); 
+	}
+	else {
+		printf("DEBUGGING qcolumns.values[%i].column: ", j);
+		puts(qcolumns.values[j].column); 
+		printf("\n");
+	}
+	if (qcolumns.values[j].table == NULL) { //DEBUGGING
+		printf("DEBUGGING qcolumns.values[%i].table: NULL\n", j);
+	}
+	else {
+		printf("DEBUGGING qcolumns.values[%i].table: ", j);
+		puts(qcolumns.values[j].table); 
+		printf("\n");
+	}
+    
+  }
+
+
   
   // Will impement only for tables.number == 1
   // And qcolumns.number == 1
@@ -296,11 +322,95 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
   // And qcolumns.values[0].column == NULL
 
   //---------------------------------------------------
-  // Your code goes here
+  for (int i = 0; i < tables.number; i++) {//1
+	if (sudba_exists(tables.values[i])) {//2
+  		for (int j = 0; j < qcolumns.number; j++) {//3
+			if (qcolumns.values[j].table == NULL && qcolumns.values[0].column == NULL) { //QQ: do we need the other 2 ands
+				Columns rsc; //rsc = read_schema_column
+				status = read_schema(tables.values[i], &rsc);
+				if (status == false) {
+					fprintf(response, HTTP_VER " 500 Internal Server Error %s\n\r", tables.values[i]);
+					break;
+				}
+				else {
+					fprintf(response, HTTP_VER " 200 Success\n\r\n\r"); //for client or server? //delete tables.values[i] later?				
+  					char data  [strlen(tables.values[i]) + sizeof(DB_DATA_EXT  )];
+  					sprintf(data, "%s" DB_DATA_EXT  , tables.values[i]);
+					int data_file = open(data, O_RDONLY);
+					for (int k = 0; k < rsc.number; k++) {//4
+						//dz did it like this
+						int in;
+						float fl;
+						size_t count = 0;
+						//dz did it like this
+						fprintf(response, "%s | ", rsc.declarations[k].name);
+
+						
+  						if (data_file < 0) { //QQ: neccessary?
+							printf("OPEN FAIL!\n");//DEBUGGING
+    							//return false;
+  						}
+						else {
+							switch(rsc.declarations[k].type) {
+								case COL_INT:
+									read(data_file, &in, sizeof(int));
+									printf("int: %i\n", in);
+									break;
+								case COL_FLOAT:
+									read(data_file, &fl, sizeof(float));
+									printf("float: %f\n", fl);
+									break;
+								case COL_STR:
+									{
+									char *buf = malloc(sizeof(char) * rsc.declarations[k].width+1);
+									read(data_file, buf, rsc.declarations[k].width+1);
+									//char buf[rsc.declarations[k].width+1];
+									//bzero(buf, sizeof(buf));
+									//read(data_file, &buf, sizeof(buf));
+									//buf[sizeof(buf)] = '\0';
+									printf("str: %s\n", buf);
+									break;
+									}
+							}
+							//while (done > 0) { //while(!done) 
+								
+/*
+								done = read(data_file, &m_name, sizeof(m_name));
+								printf("done: %i\n", done);
+								m_name[strlen(m_name)] = '\0';
+								done = read(data_file, &m_age, sizeof(m_age));
+								printf("done: %i\n", done);
+								done = read(data_file, &m_gender, sizeof(m_gender));
+								printf("done: %i\n", done);
+								m_gender[strlen(m_gender)] = '\0';
+								done = read(data_file, &m_gpa, sizeof(m_gpa));
+								printf("done: %i\n", done);
+								printf("PRINTING: sizeof[k = %i] width: %i, name: %s type: %lu, type: %u \n",k,rsc.declarations[k].width, rsc.declarations[k].name, sizeof(rsc.declarations[k].type), rsc.declarations[k].type);
+								printf("Magic variables: m_name: %s, m_age: %i, m_gender: %c, m_gpa: %f\n", m_name, m_age, m_gender[0], m_gpa);
+								//puts(data_buffer);
+								printf("\n");
+								//memset(data_buffer, 0, sizeof(data_buffer));
+
+							}*/
+						}
+					}//4
+					fprintf(response, "\n");
+					
+				}
+				
+			}
+  		}//3
+	}//2
+	else {
+		status = false;
+		fprintf(response, HTTP_VER " 404 Not FounDEBUGGINGSUDBA_EXIST FAILEDd %s\n\r", tables.values[i]);
+		break;
+		}	
+  }//1
   //---------------------------------------------------
 
   // 0. Use file response instead of stdout for reporting!
-  // 1. Check if the table exists; if it does not, report 404 Not Found
+  // 1. Check if the table exists; if it does not, report 404 Not Foundx
   // 2. Read the table schema
   // 3. Print HTTP_VER " 200 Success\n\r\n\r" (yes, a blank line)
   // 4. Print all column names on the same line, separated by vertical bars | 
