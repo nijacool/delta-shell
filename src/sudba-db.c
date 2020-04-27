@@ -286,7 +286,7 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 {
   bool status = true;
 
-  // Much locking needed
+  // Much locking needed!
   for(int i = 0; i < tables.number; i++)
     sudba_lock(tables.values[i]);
   
@@ -298,6 +298,14 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
   //---------------------------------------------------
   // Your code goes here
   //---------------------------------------------------
+
+  // 0. Use file response instead of stdout for reporting!
+  // 1. Check if the table exists; if it does not, report 404 Not Found
+  // 2. Read the table schema
+  // 3. Print HTTP_VER " 200 Success\n\r\n\r" (yes, a blank line)
+  // 4. Print all column names on the same line, separated by vertical bars | 
+  // 5. For each row in the data file, print column data in ASCII
+  //    (not binary) format on one line per row, separated by vertical bars |
   
   // Cleanup
   for(int i = 0; i < tables.number; i++)
