@@ -322,6 +322,65 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
   // And qcolumns.values[0].column == NULL
 
   //---------------------------------------------------
+  if ((tables.number == 1) && (qcolumns.number == 1) && (qcolumns.values[0].table == NULL) && (qcolumns.values[0].column == NULL)) { //if 
+	if (sudba_exists(tables.values[0])) {
+		printf("Table name: %s\n", tables.values[0]);
+		Columns rsc; //rsc = read_schema_column
+		status = read_schema(tables.values[0], &rsc);
+		int done = 1;
+		char data  [strlen(tables.values[0]) + sizeof(DB_DATA_EXT  )];
+  		sprintf(data, "%s" DB_DATA_EXT  , tables.values[0]);
+		int data_file = open(data, O_RDONLY);
+		fprintf(response, "%s | %s | %s | %s", rsc.declarations[0].name, rsc.declarations[1].name, rsc.declarations[2].name, rsc.declarations[3].name);//debugging
+		while(done > 0) { //while done > 0
+			for (int k = 0; k < rsc.number; k++) {//for k
+				int in;
+				float fl;
+				//dz did it like this
+  				if (data_file < 0) { //QQ: neccessary?
+					printf("OPEN FAIL!\n");//DEBUGGING
+    						//return false;
+  				}
+				else {//else
+					switch(rsc.declarations[k].type) {
+						case COL_INT:
+							done = read(data_file, &in, sizeof(int));
+							printf("int: %i\n", in);
+							break;
+						case COL_FLOAT:
+							done = read(data_file, &fl, sizeof(float));
+							printf("float: %f\n", fl);
+							break;
+						case COL_STR:
+						{
+							char buf[rsc.declarations[k].width+1];
+							done = read(data_file, &buf, sizeof(char)*rsc.declarations[k].width+1);
+							printf("str: %s\n\nrsc.number.declarations[%i].width = %i", buf, k, rsc.declarations[k].width);
+							
+							
+							for (int z = 0; z < 17; z++) {
+								if (buf[z] == '\0') {
+									printf("buf[%i] is null\n", z);
+								}
+								else {
+									printf("buf[%i]: %c\n", z, buf[z]);
+								}
+							}
+							
+							break;
+						}
+					}
+				}//else
+			}//for k
+		}//while done > 0
+		
+	}
+	else {
+		printf("Table does not esxist\n"); //Debugging
+	}
+	}//if
+/*
+
   for (int i = 0; i < tables.number; i++) {//1
 	if (sudba_exists(tables.values[i])) {//2
   		for (int j = 0; j < qcolumns.number; j++) {//3
@@ -344,14 +403,12 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 						size_t count = 0;
 						//dz did it like this
 						fprintf(response, "%s | ", rsc.declarations[k].name);
-
-						
   						if (data_file < 0) { //QQ: neccessary?
 							printf("OPEN FAIL!\n");//DEBUGGING
     							//return false;
   						}
 						else {
-							switch(rsc.declarations[k].type) {
+							**switch(rsc.declarations[k].type) {
 								case COL_INT:
 									read(data_file, &in, sizeof(int));
 									printf("int: %i\n", in);
@@ -371,10 +428,10 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 									printf("str: %s\n", buf);
 									break;
 									}
-							}
-							//while (done > 0) { //while(!done) 
+							}**
+							//while (done > 0) { //while(!done) -----------
 								
-/*
+
 								done = read(data_file, &m_name, sizeof(m_name));
 								printf("done: %i\n", done);
 								m_name[strlen(m_name)] = '\0';
@@ -391,7 +448,7 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 								printf("\n");
 								//memset(data_buffer, 0, sizeof(data_buffer));
 
-							}*/
+							}
 						}
 					}//4
 					fprintf(response, "\n");
@@ -406,7 +463,7 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 		fprintf(response, HTTP_VER " 404 Not FounDEBUGGINGSUDBA_EXIST FAILEDd %s\n\r", tables.values[i]);
 		break;
 		}	
-  }//1
+  }//1*/
   //---------------------------------------------------
 
   // 0. Use file response instead of stdout for reporting!
@@ -418,17 +475,18 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
   //    (not binary) format on one line per row, separated by vertical bars |
   
   // Cleanup
-  for(int i = 0; i < tables.number; i++)
+  for(int i = 0; i < tables.number; i++) {
     sudba_unlock(tables.values[i]);
-
+  }
   for(int i = 0; i < qcolumns.number; i++){
     free(qcolumns.values[i].table);
     free(qcolumns.values[i].column);
   }
   
-  for(int i = 0; i < tables.number; i++)
+  for(int i = 0; i < tables.number; i++) {
     free(tables.values[i]);
-  
+  }
+
   free(qcolumns.values);
   free(tables.values);
   return true;  
