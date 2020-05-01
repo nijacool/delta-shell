@@ -182,7 +182,7 @@ static bool write_data(char *table, Values values, Columns columns)
   
   for(int i = 0; i < values.number; i++ ) {
     Value val = values.values[i];
-    void *ptr = NULL;
+    void *ptr = NULL, *col = NULL;
     size_t count = 0;
     
     // Prepare for writing
@@ -203,25 +203,26 @@ static bool write_data(char *table, Values values, Columns columns)
 //    For example, string "Hello" shall be written into column char(10) as
 //    "Hello\0\0\0\0\0" (six zeros, including the trailing terminator!).
 //    The same string shall be written into column char(2) as "He" (trimmed).
-	char col[columns.declarations[i].width + 1];
-	bzero(col, sizeof(col));
-	memcpy(col, val.value.string_val, sizeof(col) - 1);
-	ptr = col;
-	count = sizeof(col);
+	count = columns.declarations[i].width + 1;
+	ptr = col = my_malloc(count);
+	bzero(col, count);
+	memcpy(col, val.value.string_val, count -1);
       }
       break;
     }
     
     // Attempt to write
     if(count != write(data_file, ptr, count)) {
-      close(data_file);
+	if (col) free(col); 
+		close(data_file);
+	
       return false;
     }
   }
     
   // If writing fails, report error 500
-  if (-1 == close(data_file))
-    return false;
+    if (-1 == close(data_file))
+    	return false;
 
   return true;
 }
@@ -324,15 +325,18 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
   //---------------------------------------------------
   if ((tables.number == 1) && (qcolumns.number == 1) && (qcolumns.values[0].table == NULL) && (qcolumns.values[0].column == NULL)) { //if 
 	if (sudba_exists(tables.values[0])) {
-		printf("Table name: %s\n", tables.values[0]);
+		printf("Table name: %s\n", tables.values[0]);//DEBUGGING
 		Columns rsc; //rsc = read_schema_column
 		status = read_schema(tables.values[0], &rsc);
+		if (status == true) {
+		fprintf(response, HTTP_VER " 200 Success\n\r\n\r");
 		int done = 1;
 		char data  [strlen(tables.values[0]) + sizeof(DB_DATA_EXT  )];
   		sprintf(data, "%s" DB_DATA_EXT  , tables.values[0]);
 		int data_file = open(data, O_RDONLY);
 		fprintf(response, "%s | %s | %s | %s", rsc.declarations[0].name, rsc.declarations[1].name, rsc.declarations[2].name, rsc.declarations[3].name);//debugging
 		while(done > 0) { //while done > 0
+			fprintf(response, "\n");
 			for (int k = 0; k < rsc.number; k++) {//for k
 				int in;
 				float fl;
@@ -345,20 +349,32 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 					switch(rsc.declarations[k].type) {
 						case COL_INT:
 							done = read(data_file, &in, sizeof(int));
+							if (!(done > 0)) { 
+								break;
+							}
 							printf("int: %i\n", in);
+							fprintf(response, "%i\t", in);
 							break;
 						case COL_FLOAT:
 							done = read(data_file, &fl, sizeof(float));
+							if (!(done > 0)) { 
+								break;
+							}
 							printf("float: %f\n", fl);
+							fprintf(response, "%f\t", fl);
 							break;
 						case COL_STR:
 						{
 							char buf[rsc.declarations[k].width+1];
 							done = read(data_file, &buf, sizeof(char)*rsc.declarations[k].width+1);
+							if (!(done > 0)) { 
+								break;
+							}
 							printf("str: %s\n\nrsc.number.declarations[%i].width = %i", buf, k, rsc.declarations[k].width);
+							fprintf(response, "%s\t", buf);
 							
 							
-							for (int z = 0; z < 17; z++) {
+							for (int z = 0; z < sizeof(buf); z++) {
 								if (buf[z] == '\0') {
 									printf("buf[%i] is null\n", z);
 								}
@@ -373,10 +389,15 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 				}//else
 			}//for k
 		}//while done > 0
+		}//if schema == false
+		else{
+			fprintf(response, HTTP_VER " 500 Internal Server Error \n\r");
+		}
 		
 	}
 	else {
-		printf("Table does not esxist\n"); //Debugging
+		status = false;
+		fprintf(response, HTTP_VER " 404 Not Found\n\r");
 	}
 	}//if
 /*
