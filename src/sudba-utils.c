@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "sudba.h"
+#include <sys/time.h>
 
 char *sudba_make_string(char *text) {
   int text_length = strlen(text); 
@@ -67,47 +68,53 @@ static TableLock *locks = NULL;
 
 // Table locking functions
 void sudba_lock(char *table) {
+  bool table_found = false;
+  pthread_mutex_lock(&lock_on_locks);
   char table_name[strlen(table) + 1];
   table_name[strlen(table)] = '\0';
   sprintf(table_name, "%s", table);
-	printf("table name: %s\n", table_name); 
-  if (active_tables == 0) { //first table in
-	locks = my_realloc(locks, (active_tables+1)*sizeof(TableLock));
-	locks[0].table = table_name;
-	active_tables = active_tables + 1;
-	pthread_mutex_lock(&locks[0].lock);
-	}
-  else {
-	for (int i = 0; i < active_tables; i++) {
-			if (!(strcmp(locks[i].table, table))) {
-				//pthread_mutex_lock(&locks[i].lock); //QQ:use the locks?
-				continue;
-			}
-			if (i == active_tables-1) { //reached end of for loop and still no match!
-				locks = my_realloc(locks, (active_tables+1)*sizeof(TableLock));//QQ: sizeof(TableLock)?
-				locks[active_tables].table = table_name;
-				active_tables = active_tables + 1;
-				pthread_mutex_lock(&locks[i].lock);
-				
-				
-			}
+  printf("table name: %s\n", table_name);
+  for (int i = 0; i < active_tables; i++) {
+	printf("SUDBA_LOCK locks[%i].table = %s\n", i, locks[i].table);
+	if (!(strcmp(locks[i].table, table_name))) { //Found the table!
+			pthread_mutex_lock(&locks[i].lock);
+			table_found = true;
+			break;
 		}
 	}
-  
+  if (table_found == false) {
+	locks = my_realloc(locks, (active_tables+1)*sizeof(TableLock));
+        locks[active_tables].table = table_name;
+	pthread_mutex_lock(&locks[active_tables].lock);
+        active_tables = active_tables + 1;
+	}
   // 1. Check if the table is on the list of locks.
   // 2. If it is not, add another lock.
   // 3. Find the mutex for the table (now, it exists!)
   // 4. Lock it
   // Items 1-3 may be combined
+  pthread_mutex_unlock(&lock_on_locks);
 }
 
 void sudba_unlock(char *table) {
+  for (int j = 0; j < 99999999; j++) {
+	}
+  pthread_mutex_lock(&lock_on_locks);
+  bool table_found = false;
+
   char table_name[strlen(table) + 1];
   table_name[strlen(table)] = '\0';
   sprintf(table_name, "%s", table);
   for (int i = 0; i < active_tables; i++) {
+	printf("SUDBA UNLOCK : locks[%i].table = %s\n", i, locks[i].table);
+		if (!(strcmp(locks[i].table, table_name))) {
+			pthread_mutex_unlock(&locks[i].lock);
+			table_found = true;
+		}
+	}
+/*
+  for (int i = 0; i < active_tables; i++) {
 	if (!(strcmp(locks[i].table, table))) {
-		memset(locks[i].table, '\0', sizeof(locks[i].table)-1); //for now to delete element
 		// locks[i-1].table = locks[i].table
 		//realloc(locks, sizeof(locks) - sizeof(locks.table))
 		//this is the only way i see to remove a table from the array
@@ -116,11 +123,13 @@ void sudba_unlock(char *table) {
 		//we gotta unlock
 		}
 	if (i == active_tables-1) {//table does not exist?
-		//pthread_mutex_unlock(&locks[i].lock); //QQ: what if the table does not exist to unlock?
+		pthread_mutex_unlock(&locks[i].lock); //QQ: what if the table does not exist to unlock?
 		}
 	}
+*/
   // 5. Find the mutex for the table (it exists!)
   // 6. Unlock it
+  pthread_mutex_unlock(&lock_on_locks);
 }
 
 // Memory management functions
