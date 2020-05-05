@@ -324,7 +324,6 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 							if (!(done > 0)) { 
 								break;
 							}
-							printf("int: %i\n", in);
 							fprintf(response, "%i | ", in);
 							break;
 						case COL_FLOAT:
@@ -332,7 +331,6 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 							if (!(done > 0)) { 
 								break;
 							}
-							printf("float: %f\n", fl);
 							fprintf(response, "%f | ", fl);
 							break;
 						case COL_STR:
@@ -342,19 +340,7 @@ bool sudba_select(QualifiedColumns qcolumns, Tables tables, void *where, FILE* r
 							if (!(done > 0)) { 
 								break;
 							}
-							printf("str: %s\n\nrsc.number.declarations[%i].width = %i", buf, k, rsc.declarations[k].width);
 							fprintf(response, "%s | ", buf);
-							
-							
-							for (int z = 0; z < sizeof(buf); z++) {
-								if (buf[z] == '\0') {
-									printf("buf[%i] is null\n", z);
-								}
-								else {
-									printf("buf[%i]: %c\n", z, buf[z]);
-								}
-							}
-							
 							break;
 						}
 					}

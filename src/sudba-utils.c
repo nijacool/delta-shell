@@ -68,24 +68,29 @@ static TableLock *locks = NULL;
 
 // Table locking functions
 void sudba_lock(char *table) {
-  bool table_found = false;
+  for (int j = 0; j < 99999999; j++) {
+	}
+  
   pthread_mutex_lock(&lock_on_locks);
+  bool table_found = false;
   char table_name[strlen(table) + 1];
   table_name[strlen(table)] = '\0';
   sprintf(table_name, "%s", table);
   printf("table name: %s\n", table_name);
   for (int i = 0; i < active_tables; i++) {
-	printf("SUDBA_LOCK locks[%i].table = %s\n", i, locks[i].table);
+	//printf("SUDBA_LOCK locks[%i].table = %s \n", i, locks[i].table);
 	if (!(strcmp(locks[i].table, table_name))) { //Found the table!
-			pthread_mutex_lock(&locks[i].lock);
+			//pthread_mutex_lock(&locks[i].lock);
 			table_found = true;
 			break;
 		}
 	}
   if (table_found == false) {
 	locks = my_realloc(locks, (active_tables+1)*sizeof(TableLock));
+	//memcpy(locks[active_tables].table, table_name, strlen(table_name));
         locks[active_tables].table = table_name;
-	pthread_mutex_lock(&locks[active_tables].lock);
+
+	//pthread_mutex_lock(&locks[active_tables].lock);
         active_tables = active_tables + 1;
 	}
   // 1. Check if the table is on the list of locks.
@@ -97,7 +102,7 @@ void sudba_lock(char *table) {
 }
 
 void sudba_unlock(char *table) {
-  for (int j = 0; j < 99999999; j++) {
+  for (int j = 0; j < 999999999; j++) {
 	}
   pthread_mutex_lock(&lock_on_locks);
   bool table_found = false;
@@ -106,9 +111,9 @@ void sudba_unlock(char *table) {
   table_name[strlen(table)] = '\0';
   sprintf(table_name, "%s", table);
   for (int i = 0; i < active_tables; i++) {
-	printf("SUDBA UNLOCK : locks[%i].table = %s\n", i, locks[i].table);
+	//printf("SUDBA UNLOCK : locks[%i].table = %s\n", i, locks[i].table);
 		if (!(strcmp(locks[i].table, table_name))) {
-			pthread_mutex_unlock(&locks[i].lock);
+			//pthread_mutex_unlock(&locks[i].lock);
 			table_found = true;
 		}
 	}
