@@ -11,7 +11,7 @@ insert into students values("Jane Jillian", 22, "F", 2.12, 16);
 insert into students values("Jane Smith", 22, 2.12, "F");
 insert into students values("Jane Smith", 22.5, "F", 3);
 insert into students values("Jeff Smith", 22, "M", 2.12);
-insert into students values("Jane Jillian Verylongname", 69, "F", 4.20);
+insert into students values("Jane Jillian Verylongname", 42, "F", 3.10);
 select students.name from students, grades;
 select name,age from students;
 select * from students;
