@@ -68,6 +68,7 @@ static TableLock *locks = NULL;
 
 // Table locking functions
 void sudba_lock(char *table) {
+  // DZ: sleep(10) ?
   for (int j = 0; j < 99999999; j++) {
 	}
   
@@ -102,6 +103,7 @@ void sudba_lock(char *table) {
 }
 
 void sudba_unlock(char *table) {
+  // DZ: sleep(10) ?
   for (int j = 0; j < 999999999; j++) {
 	}
   pthread_mutex_lock(&lock_on_locks);
@@ -115,6 +117,7 @@ void sudba_unlock(char *table) {
 		if (!(strcmp(locks[i].table, table_name))) {
 			//pthread_mutex_unlock(&locks[i].lock);
 			table_found = true;
+			// DZ: break
 		}
 	}
 /*
