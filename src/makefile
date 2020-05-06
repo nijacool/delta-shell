@@ -9,7 +9,7 @@ CFLAGS = -I$(INCLUDE) -Wall -pedantic -Wextra -Wcast-align -Wcast-qual \
 	-Wdisabled-optimization -Wformat=2 -Winit-self \
 	-Wmissing-include-dirs -Wredundant-decls -Wshadow \
 	-Wstrict-overflow=5 -Wundef -Werror -Wno-unused \
-	-g -Wno-unused-result -O3 -Wno-strict-overflow -Wno-sign-compare -pthread
+	-g -Wno-unused-result -O0 -Wno-strict-overflow -Wno-sign-compare -pthread
 
 all: $(TARGET)
 
