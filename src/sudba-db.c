@@ -50,7 +50,8 @@ static bool read_schema (char *table, Columns *columns) {
   int w = 1;
   columns->declarations = NULL;
   columns->number = 0;
-  while(w > 0){ 
+  while(w > 0){
+    // DZ: Why not make this statement the explicit while condition?
 	if ((read(s, &type, sizeof(type))) <= 0){ 
 		break; 
 		}
